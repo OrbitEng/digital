@@ -6,8 +6,6 @@ pub enum DigitalMarketErrors{
     WrongDecisionAccount,
     #[msg("Decision has not been made yet, can not close")]
     UndecidedTransaction,
-    #[msg("Could not compute escrow bump")]
-    InvalidEscrowBump,
     #[msg("Can not accept your own rate")]
     InvalidRateAcceptor,
     #[msg("Please confirm delivery first")]
@@ -16,4 +14,8 @@ pub enum DigitalMarketErrors{
     WaitingForSellerData,
     #[msg("The seller for the product does not match the seller given")]
     InvalidSellerForListing,
+    #[msg("Could not compute escrow bump")]
+    InvalidEscrowBump,
+    #[msg("Could not compute auth bump")]
+    InvalidAuthBump,
 }

@@ -31,6 +31,10 @@ pub mod orbit_digital_market {
     pub fn fund_escrow(ctx: Context<FundEscrow>) -> Result<()>{
         DigitalTransaction::fund_escrow(ctx)
     }
+
+    pub fn close_transaction_account(ctx: Context<CloseTransactionAccount>) -> Result<()>{
+        DigitalTransaction::close_transaction_account(ctx)
+    }
     
     pub fn confirm_delivered(ctx: Context<BuyerConfirmation>) -> Result<()>{
         confirm_delivered_handler(ctx)

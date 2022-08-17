@@ -334,9 +334,9 @@ checksum = "771fe0050b883fcc3ea2359b1a96bcfbc090b7116eae7c3c512c7a083fdf23d3"
 
 [[package]]
 name = "bumpalo"
-version = "3.10.0"
+version = "3.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "37ccbd214614c6783386c1af30caf03192f17891059cecc394b4fb119e363de3"
+checksum = "c1ad822118d20d2c234f427000d5acc36eabe1e29a348c89b63dd60b13f28e5d"
 
 [[package]]
 name = "bv"
@@ -748,9 +748,10 @@ dependencies = [
 [[package]]
 name = "market-accounts"
 version = "0.1.0"
-source = "git+https://github.com/bruh-capital/accounts#6d3df5013525b03f56d81d5c9d7bd4c55d06a3d4"
+source = "git+https://github.com/bruh-capital/accounts#4a728ffed68cd7463805f98c541d8919e0be8025"
 dependencies = [
  "anchor-lang",
+ "orbit-addresses",
 ]
 
 [[package]]
@@ -818,6 +819,14 @@ name = "opaque-debug"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
+
+[[package]]
+name = "orbit-addresses"
+version = "0.1.0"
+source = "git+https://github.com/bruh-capital/addresses#81d3cded0af4fe5f631310d10aca19c5f900c2c0"
+dependencies = [
+ "anchor-lang",
+]
 
 [[package]]
 name = "orbit-digital-market"
@@ -892,7 +901,7 @@ dependencies = [
 [[package]]
 name = "product"
 version = "0.1.0"
-source = "git+https://github.com/bruh-capital/product#5e81861c634dd65227024fedef6ff7a2d25cd5e6"
+source = "git+https://github.com/bruh-capital/product#7b1bf515d628406fdf8b3e295c3822ad5fe00f81"
 dependencies = [
  "anchor-lang",
 ]
@@ -1273,7 +1282,7 @@ dependencies = [
 [[package]]
 name = "transaction"
 version = "0.1.0"
-source = "git+https://github.com/bruh-capital/transaction#e3434af10396046afb0c7f69b38d8db4f2857042"
+source = "git+https://github.com/bruh-capital/transaction#dfc5961058709512da6dba70754c7da59aab670e"
 dependencies = [
  "anchor-lang",
  "product",
