@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use product::product_struct::OrbitProduct;
 
 pub mod accessors;
 pub mod structs;
@@ -10,14 +11,12 @@ pub use errors::*;
 
 declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
 
-/// CHECK: I hav eno idea why i need to import it here
-use product::product_struct::OrbitProduct;
-
 #[program]
 pub mod orbit_digital_market {
     use super::*;
     use product::product_trait::OrbitProductTrait;
     use transaction::transaction_trait::OrbitTransactionTrait;
+    use market_accounts::structs::OrbitMarketAccountTrait;
 
     //////////////////////////
     /// TRANSACTION
@@ -91,6 +90,13 @@ pub mod orbit_digital_market {
     }
     pub fn accept_rate(ctx: Context<UpdateRate>) -> Result<()>{
         accept_rate_handler(ctx)
+    }
+
+    /////////////////////////////////////////////////
+    /// REVIEW RELATED
+
+    pub fn leave_review(ctx: Context<LeaveReview>, rating: u8) -> Result<()>{
+        DigitalTransaction::leave_review(ctx, rating)
     }
 }
 

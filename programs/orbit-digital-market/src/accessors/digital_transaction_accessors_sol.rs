@@ -8,7 +8,19 @@ use anchor_lang::{
     }
 };
 use transaction::{transaction_trait::OrbitTransactionTrait, transaction_struct::TransactionState};
-use market_accounts::{market_account::OrbitMarketAccount, program::OrbitMarketAccounts, cpi::accounts::IncrementTransactions};
+use market_accounts::{
+    market_account::OrbitMarketAccount, program::OrbitMarketAccounts,
+    cpi::accounts::{
+        IncrementTransactions,
+        SubmitRating
+    },
+    structs::{
+        market_account_trait::OrbitMarketAccountTrait,
+        TransactionReviews,
+        ReviewErrors,
+    },
+    MarketAccountErrors
+};
 use crate::{DigitalTransaction, DigitalProduct, DigitalMarketErrors, close_escrow, BuyerDecisionState};
 
 ////////////////////////////////////////////////////////////////////
@@ -168,6 +180,12 @@ impl<'a, 'b, 'c, 'd> OrbitTransactionTrait<'a, 'b, 'c, 'd,  OpenDigitalTransacti
         ctx.accounts.digital_transaction.metadata.escrow_account = ctx.accounts.escrow_account.key();
         ctx.accounts.digital_transaction.product = ctx.accounts.digital_product.key();
         ctx.accounts.digital_transaction.final_decision = BuyerDecisionState::Null;
+
+        ctx.accounts.digital_transaction.reviews = TransactionReviews{
+            buyer: false,
+            seller: false
+        };
+
         Ok(())
     }
 
@@ -349,4 +367,103 @@ pub struct SellerAcceptTransaction<'info>{
 pub fn seller_accept_transaction_handler(ctx: Context<SellerAcceptTransaction>) -> Result<()>{
     ctx.accounts.digital_transaction.metadata.transaction_state = TransactionState::SellerConfirmed;
     Ok(())
+}
+
+///////////////////////////////////////////////////////////////////////
+/// ACCOUNT HELPERS (leave a review!)
+
+#[derive(Accounts)]
+pub struct LeaveReview<'info>{
+    #[account(mut)]
+    pub digital_transaction: Account<'info, DigitalTransaction>,
+
+    #[account(
+        mut,
+        constraint = 
+        (reviewer.key() == digital_transaction.metadata.seller) ||
+        (reviewer.key() == digital_transaction.metadata.buyer)
+    )]
+    pub reviewed_account: Account<'info, OrbitMarketAccount>,
+
+    #[account(
+        constraint = 
+        (reviewer.key() == digital_transaction.metadata.seller) ||
+        (reviewer.key() == digital_transaction.metadata.buyer),
+        has_one = master_pubkey
+    )]
+    pub reviewer: Account<'info, OrbitMarketAccount>,
+
+    pub master_pubkey: Signer<'info>,
+
+    pub accounts_program: Program<'info, OrbitMarketAccounts>,
+
+    #[account(
+        seeds = [b"digital_auth"],
+        bump
+    )]
+    pub digital_auth: SystemAccount<'info>,
+}
+
+impl <'a> OrbitMarketAccountTrait<'a, LeaveReview<'a>> for DigitalTransaction{
+    fn leave_review(ctx: Context<LeaveReview>, rating: u8) -> Result<()>{
+        if ctx.accounts.reviewer.key() == ctx.accounts.reviewed_account.key(){
+            return err!(ReviewErrors::InvalidReviewAuthority)
+        };
+        if rating == 0 || rating > 5{
+            return err!(ReviewErrors::RatingOutsideRange)
+        };
+
+        if ctx.accounts.digital_transaction.metadata.seller == ctx.accounts.reviewer.key() && !ctx.accounts.digital_transaction.reviews.seller{
+            match ctx.bumps.get("digital_auth"){
+                Some(auth_bump) => {
+                    submit_rating_with_signer(
+                        ctx.accounts.accounts_program.to_account_info(),
+                        ctx.accounts.reviewed_account.to_account_info(),
+                        ctx.accounts.digital_auth.to_account_info(),
+                        &[&[b"digital_auth", &[*auth_bump]]],
+                        rating
+                    );
+                    ctx.accounts.digital_transaction.reviews.seller = true;
+                },
+                None => return err!(MarketAccountErrors::CannotCallOrbitAccountsProgram)
+            }
+        }else
+        if ctx.accounts.digital_transaction.metadata.buyer == ctx.accounts.reviewer.key()  && !ctx.accounts.digital_transaction.reviews.buyer{
+            match ctx.bumps.get("digital_auth"){
+                Some(auth_bump) => {
+                    submit_rating_with_signer(
+                        ctx.accounts.accounts_program.to_account_info(),
+                        ctx.accounts.reviewed_account.to_account_info(),
+                        ctx.accounts.digital_auth.to_account_info(),
+                        &[&[b"digital_auth", &[*auth_bump]]],
+                        rating
+                    );
+                    ctx.accounts.digital_transaction.reviews.buyer = true;
+                },
+                None => return err!(MarketAccountErrors::CannotCallOrbitAccountsProgram)
+            }
+            ctx.accounts.digital_transaction.reviews.buyer = true;
+        }else
+        {
+            return err!(ReviewErrors::InvalidReviewAuthority)
+        };
+
+        Ok(())
+    }
+
+}
+
+/// CHECK: has to be cpi because we can't write to a program we dont own (physical writing to market account directly)
+fn submit_rating_with_signer<'a>(market_program: AccountInfo<'a>, reviewed_account: AccountInfo<'a>, auth: AccountInfo<'a>, seeds: &[&[&[u8]]], rating: u8){
+    market_accounts::cpi::submit_rating(
+        CpiContext::new_with_signer(
+            market_program,
+            SubmitRating{
+                market_account: reviewed_account,
+                invoker: auth
+            },
+            seeds
+        ),
+        (rating-1) as usize
+    ).expect("could not call orbit accounts program");
 }
