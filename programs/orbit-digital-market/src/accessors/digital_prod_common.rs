@@ -96,3 +96,7 @@ pub fn change_price_handler(ctx: Context<SetDigitalProductField>, price: u64) ->
     ctx.accounts.digital_product.metadata.price = price;
     Ok(())
 }
+pub fn update_currency_handler(ctx: Context<SetDigitalProductField>, currency: Pubkey) -> Result<()>{
+    ctx.accounts.digital_product.metadata.currency = currency;
+    Ok(())
+}

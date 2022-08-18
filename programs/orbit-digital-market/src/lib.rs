@@ -21,14 +21,30 @@ pub mod orbit_digital_market {
     //////////////////////////
     /// TRANSACTION
 
-    pub fn open_digital_transaction(ctx: Context<OpenDigitalTransaction>, price: u64) -> Result<()>{
-        DigitalTransaction::open(ctx, price)
+    /// SOL
+    pub fn open_transaction_sol(ctx: Context<OpenDigitalTransactionSol>, price: u64) -> Result<()>{
+        DigitalTransaction::open_sol(ctx, price)
     }
-    pub fn close(ctx: Context<CloseDigitalTransaction>) -> Result<()>{
-        DigitalTransaction::close(ctx)
+
+    pub fn close_transaction_sol(ctx: Context<CloseDigitalTransactionSol>) -> Result<()>{
+        DigitalTransaction::close_sol(ctx)
     }
-    pub fn fund_escrow(ctx: Context<FundEscrow>) -> Result<()>{
-        DigitalTransaction::fund_escrow(ctx)
+
+    pub fn fund_escrow_sol(ctx: Context<FundEscrowSol>) -> Result<()>{
+        DigitalTransaction::fund_escrow_sol(ctx)
+    }
+
+    /// SPL
+    pub fn open_transaction_spl(ctx: Context<OpenDigitalTransactionSpl>, price: u64) -> Result<()>{
+        DigitalTransaction::open_spl(ctx, price)
+    }
+
+    pub fn close_transaction_spl(ctx: Context<CloseDigitalTransactionSpl>) -> Result<()>{
+        DigitalTransaction::close_spl(ctx)
+    }
+
+    pub fn fund_escrow_spl(ctx: Context<FundEscrowSpl>) -> Result<()>{
+        DigitalTransaction::fund_escrow_spl(ctx)
     }
 
     pub fn close_transaction_account(ctx: Context<CloseTransactionAccount>) -> Result<()>{
@@ -74,6 +90,9 @@ pub mod orbit_digital_market {
     }
     pub fn change_price(ctx: Context<SetDigitalProductField>, price: u64) -> Result<()>{
         change_price_handler(ctx, price)
+    }
+    pub fn update_currency(ctx: Context<SetDigitalProductField>, currency: Pubkey) -> Result<()>{
+        update_currency_handler(ctx, currency)
     }
 
     ////////////////////////////////

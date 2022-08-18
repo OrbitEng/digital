@@ -1,9 +1,12 @@
-pub mod digital_product_accessors;
-pub mod digital_transaction_accessors_sol;
-pub mod commission_transaction;
+pub mod tx_accessors;
+pub use tx_accessors::*;
+
+pub mod digital_prod_common;
+pub mod digital_tx_common;
+pub mod commission_tx;
 pub mod common;
 
-pub use digital_product_accessors::*;
-pub use digital_transaction_accessors_sol::*;
-pub use commission_transaction::*;
+pub use digital_prod_common::*;
+pub use digital_tx_common::*;
+pub use commission_tx::*;
 pub use common::*;
