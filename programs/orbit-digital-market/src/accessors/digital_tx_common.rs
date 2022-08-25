@@ -20,7 +20,6 @@ use market_accounts::{
 };
 use crate::{
     DigitalTransaction,
-    DigitalProduct,
     DigitalMarketErrors,
     BuyerDecisionState,
     close_escrow_sol,
@@ -46,7 +45,7 @@ pub struct CloseTransactionAccount<'info>{
         mut,
         constraint = digital_transaction.metadata.transaction_state == TransactionState::Closed,
     )]
-    pub digital_transaction: Account<'info, DigitalTransaction>,
+    pub digital_transaction: Box<Account<'info, DigitalTransaction>>,
 
     #[account(
         constraint = 
@@ -54,6 +53,11 @@ pub struct CloseTransactionAccount<'info>{
             (market_account.key() == digital_transaction.metadata.seller)
     )]
     pub market_account: Account<'info, OrbitMarketAccount>,
+
+    #[account(
+        address = market_account.master_pubkey
+    )]
+    pub account_auth: Signer<'info>,
 
     #[account(
         mut,
@@ -70,6 +74,7 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g> OrbitTransactionTrait<'a, 'b, 'c, 'd, 'e, 'f, '
         ctx.accounts.digital_transaction.metadata.transaction_state = TransactionState::Opened;
         ctx.accounts.digital_transaction.metadata.transaction_price = price;
         ctx.accounts.digital_transaction.metadata.funded = false;
+        ctx.accounts.digital_transaction.metadata.currency = ctx.accounts.digital_product.metadata.currency;
 
         ctx.accounts.digital_transaction.has_comish = false;
         ctx.accounts.digital_transaction.close_rate = 0;
@@ -93,6 +98,7 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g> OrbitTransactionTrait<'a, 'b, 'c, 'd, 'e, 'f, '
         ctx.accounts.digital_transaction.metadata.transaction_state = TransactionState::Opened;
         ctx.accounts.digital_transaction.metadata.transaction_price = price;
         ctx.accounts.digital_transaction.metadata.funded = false;
+        ctx.accounts.digital_transaction.metadata.currency = ctx.accounts.digital_product.metadata.currency;
 
         ctx.accounts.digital_transaction.has_comish = false;
         ctx.accounts.digital_transaction.close_rate = 0;
@@ -133,7 +139,7 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g> OrbitTransactionTrait<'a, 'b, 'c, 'd, 'e, 'f, '
                 ctx.accounts.buyer_account.to_account_info(),
                 ctx.accounts.seller_account.to_account_info(),
                 ctx.accounts.digital_auth.to_account_info(),
-                &[&[b"phys_auth", &[*auth_bump]]]
+                &[&[b"market_authority", &[*auth_bump]]]
             ),
             None => return err!(DigitalMarketErrors::InvalidAuthBump)
         }.expect("could not properly invoke market-accounts program");
@@ -151,7 +157,7 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g> OrbitTransactionTrait<'a, 'b, 'c, 'd, 'e, 'f, '
                     ctx.accounts.escrow_account.to_account_info(),
                     ctx.accounts.seller_token_account.to_account_info(),
                     ctx.accounts.digital_auth.to_account_info(),
-                    &[&[b"digital_auth", &[*auth_bump]]],
+                    &[&[b"market_authority", &[*auth_bump]]],
                     ctx.accounts.digital_transaction.metadata.transaction_price,
                     ctx.accounts.digital_transaction.close_rate
                 ).expect("could not transfer tokens");
@@ -160,7 +166,7 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g> OrbitTransactionTrait<'a, 'b, 'c, 'd, 'e, 'f, '
                     ctx.accounts.escrow_account.to_account_info(),
                     ctx.accounts.seller_token_account.to_account_info(),
                     ctx.accounts.digital_auth.to_account_info(),
-                    &[&[b"digital_auth", &[*auth_bump]]],
+                    &[&[b"market_authority", &[*auth_bump]]],
                     ctx.accounts.digital_transaction.metadata.transaction_price,
                     100
                 ).expect("could not transfer tokens");
@@ -169,7 +175,7 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g> OrbitTransactionTrait<'a, 'b, 'c, 'd, 'e, 'f, '
                     ctx.accounts.buyer_account.to_account_info(),
                     ctx.accounts.seller_account.to_account_info(),
                     ctx.accounts.digital_auth.to_account_info(),
-                    &[&[b"phys_auth", &[*auth_bump]]]
+                    &[&[b"market_authority", &[*auth_bump]]]
                 )
             },
             None => return err!(DigitalMarketErrors::InvalidAuthBump)
@@ -228,11 +234,6 @@ pub struct BuyerConfirmation<'info>{
         constraint = digital_transaction.metadata.buyer == buyer_account.key()
     )]
     pub digital_transaction: Box<Account<'info, DigitalTransaction>>,
-
-    #[account(
-        address = digital_transaction.product
-    )]
-    pub digital_product: Account<'info, DigitalProduct>,
 
     #[account(
         has_one = master_pubkey
@@ -332,7 +333,7 @@ pub fn seller_accept_transaction_handler(ctx: Context<SellerAcceptTransaction>) 
 #[derive(Accounts)]
 pub struct LeaveReview<'info>{
     #[account(mut)]
-    pub digital_transaction: Account<'info, DigitalTransaction>,
+    pub digital_transaction: Box<Account<'info, DigitalTransaction>>,
 
     #[account(
         mut,
@@ -355,7 +356,7 @@ pub struct LeaveReview<'info>{
     pub accounts_program: Program<'info, OrbitMarketAccounts>,
 
     #[account(
-        seeds = [b"digital_auth"],
+        seeds = [b"market_authority"],
         bump
     )]
     pub digital_auth: SystemAccount<'info>,
@@ -377,7 +378,7 @@ impl <'a> OrbitMarketAccountTrait<'a, LeaveReview<'a>> for DigitalTransaction{
                         ctx.accounts.accounts_program.to_account_info(),
                         ctx.accounts.reviewed_account.to_account_info(),
                         ctx.accounts.digital_auth.to_account_info(),
-                        &[&[b"digital_auth", &[*auth_bump]]],
+                        &[&[b"market_authority", &[*auth_bump]]],
                         rating
                     );
                     ctx.accounts.digital_transaction.reviews.seller = true;
@@ -392,7 +393,7 @@ impl <'a> OrbitMarketAccountTrait<'a, LeaveReview<'a>> for DigitalTransaction{
                         ctx.accounts.accounts_program.to_account_info(),
                         ctx.accounts.reviewed_account.to_account_info(),
                         ctx.accounts.digital_auth.to_account_info(),
-                        &[&[b"digital_auth", &[*auth_bump]]],
+                        &[&[b"market_authority", &[*auth_bump]]],
                         rating
                     );
                     ctx.accounts.digital_transaction.reviews.buyer = true;

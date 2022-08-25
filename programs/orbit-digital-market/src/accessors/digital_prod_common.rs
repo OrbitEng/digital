@@ -42,7 +42,7 @@ pub struct UnlistDigitalProduct<'info>{
         mut,
         address = seller_account.wallet
     )]
-    pub seller_wallet: SystemAccount<'info>
+    pub seller_wallet: Signer<'info>,
 }
 
 impl<'a, 'b> OrbitProductTrait<'a, 'b, ListDigitalProduct<'a>, UnlistDigitalProduct<'b>> for DigitalProduct{

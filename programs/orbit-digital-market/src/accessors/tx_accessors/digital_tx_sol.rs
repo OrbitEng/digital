@@ -94,7 +94,7 @@ pub struct CloseDigitalTransactionSol<'info>{
     pub authority: Signer<'info>,
 
     #[account(
-        seeds = [b"digital_auth"],
+        seeds = [b"market_authority"],
         bump
     )]
     pub digital_auth: SystemAccount<'info>,

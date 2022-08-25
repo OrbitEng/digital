@@ -62,7 +62,7 @@ pub struct OpenDigitalTransactionSpl<'info>{
     pub token_program: Program<'info, Token>,
 
     #[account(
-        seeds = [b"digital_auth"],
+        seeds = [b"market_authority"],
         bump
     )]
     pub digital_auth: SystemAccount<'info>,
@@ -119,7 +119,7 @@ pub struct CloseDigitalTransactionSpl<'info>{
     pub authority: Signer<'info>,
 
     #[account(
-        seeds = [b"digital_auth"],
+        seeds = [b"market_authority"],
         bump
     )]
     pub digital_auth: SystemAccount<'info>,
