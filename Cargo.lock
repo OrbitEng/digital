@@ -763,7 +763,7 @@ version = "0.1.0"
 source = "git+https://github.com/OrbitEng/accounts#caeac69b75b82c88f1fcea3b675dd79502d080fb"
 dependencies = [
  "anchor-lang",
- "orbit-addresses",
+ "orbit-addresses 0.1.0 (git+https://github.com/bruh-capital/addresses)",
 ]
 
 [[package]]
@@ -862,12 +862,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "orbit-addresses"
+version = "0.1.0"
+source = "git+https://github.com/OrbitEng/addresses#81d3cded0af4fe5f631310d10aca19c5f900c2c0"
+dependencies = [
+ "anchor-lang",
+]
+
+[[package]]
+name = "orbit-catalog"
+version = "0.1.0"
+source = "git+https://github.com/OrbitEng/catalog#a11e3caba34dfc7eef96464345a4db9438347891"
+dependencies = [
+ "anchor-lang",
+ "orbit-addresses 0.1.0 (git+https://github.com/OrbitEng/addresses)",
+]
+
+[[package]]
 name = "orbit-digital-market"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
  "market-accounts",
+ "orbit-catalog",
  "product",
  "transaction",
 ]

@@ -2,9 +2,16 @@ use anchor_lang::{
     prelude::*,
     AccountsClose
 };
+use orbit_catalog::{
+    structs::OrbitCatalogStruct,
+    cpi::{
+        accounts::EditCatalog,
+        edit_catalog
+    }, program::OrbitCatalog
+};
 use market_accounts::OrbitMarketAccount;
 use product::{product_trait::OrbitProductTrait, product_struct::OrbitProduct};
-use crate::{DigitalProduct, DigitalProductType, DigitalFileTypes, DigitalMarketErrors};
+use crate::{DigitalProduct, DigitalProductType, DigitalFileTypes, DigitalMarketErrors, program::OrbitDigitalMarket};
 
 #[derive(Accounts)]
 pub struct ListDigitalProduct<'info>{
@@ -14,7 +21,7 @@ pub struct ListDigitalProduct<'info>{
         space = 200,
         payer = seller_wallet
     )]
-    pub digital_product: Account<'info, DigitalProduct>,
+    pub digital_product: Box<Account<'info, DigitalProduct>>,
 
     pub seller_account: Account<'info, OrbitMarketAccount>,
 
@@ -24,7 +31,28 @@ pub struct ListDigitalProduct<'info>{
     )]
     pub seller_wallet: Signer<'info>,
 
-    pub system_program: Program<'info, System>
+    pub system_program: Program<'info, System>,
+
+    #[account(
+        mut,
+        seeds = [
+            b"recent_catalog"
+        ],
+        bump
+    )]
+    pub recent_catalog: Account<'info, OrbitCatalogStruct>,
+
+    #[account(
+        seeds = [
+            b"market_auth"
+        ],
+        bump
+    )]
+    pub market_auth: SystemAccount<'info>,
+
+    pub catalog_program: Program<'info, OrbitCatalog>,
+
+    pub digital_program: Program<'info, OrbitDigitalMarket>,
 }
 
 #[derive(Accounts)]
@@ -51,7 +79,20 @@ impl<'a, 'b> OrbitProductTrait<'a, 'b, ListDigitalProduct<'a>, UnlistDigitalProd
             return err!(DigitalMarketErrors::InvalidSellerForListing)
         }
         ctx.accounts.digital_product.metadata = prod;
-        Ok(())
+        match ctx.bumps.get("market_auth"){
+            Some(auth_bump) => edit_catalog(
+                CpiContext::new_with_signer(
+                    ctx.accounts.catalog_program.to_account_info(),
+                    EditCatalog {
+                        catalog: ctx.accounts.recent_catalog.to_account_info(),
+                        product: ctx.accounts.digital_product.to_account_info(),
+                        caller_auth: ctx.accounts.market_auth.to_account_info(),
+                        product_owner: ctx.accounts.digital_program.to_account_info()
+                    },
+                    &[&[b"market_auth", &[*auth_bump]]])
+            ),
+            None => err!(DigitalMarketErrors::InvalidAuthBump)
+        }
     }
 
     fn unlist(ctx: Context<UnlistDigitalProduct>)-> Result<()> {
