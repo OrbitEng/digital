@@ -1,5 +1,3 @@
-use std::convert::TryInto;
-
 use anchor_lang::{
     prelude::*,
     AccountsClose,
@@ -7,11 +5,6 @@ use anchor_lang::{
         program::invoke,
         system_instruction::transfer
     }
-};
-use pkcs8::DecodePrivateKey;
-use rsa::{
-    pkcs1::DecodeRsaPublicKey,
-    PublicKeyParts
 };
 use transaction::{transaction_trait::OrbitTransactionTrait, transaction_struct::TransactionState};
 use market_accounts::{
@@ -39,7 +32,7 @@ use crate::{
     FundEscrowSpl,
 
     post_tx_incrementing,
-    submit_rating_with_signer, program::OrbitDigitalMarket
+    submit_rating_with_signer, program::OrbitDigitalMarket, id
 };
 
 ////////////////////////////////////////////////////////////////////
@@ -82,6 +75,7 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g> OrbitTransactionTrait<'a, 'b, 'c, 'd, 'e, 'f, '
         ctx.accounts.digital_transaction.metadata.funded = false;
         ctx.accounts.digital_transaction.metadata.currency = ctx.accounts.digital_product.metadata.currency;
 
+        ctx.accounts.digital_transaction.num_keys = 0;
         ctx.accounts.digital_transaction.has_comish = false;
         ctx.accounts.digital_transaction.close_rate = 0;
 
@@ -105,7 +99,8 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g> OrbitTransactionTrait<'a, 'b, 'c, 'd, 'e, 'f, '
         ctx.accounts.digital_transaction.metadata.transaction_price = price;
         ctx.accounts.digital_transaction.metadata.funded = false;
         ctx.accounts.digital_transaction.metadata.currency = ctx.accounts.digital_product.metadata.currency;
-
+        
+        ctx.accounts.digital_transaction.num_keys = 0;
         ctx.accounts.digital_transaction.has_comish = false;
         ctx.accounts.digital_transaction.close_rate = 0;
 
@@ -264,9 +259,9 @@ pub fn confirm_accept_handler(ctx: Context<BuyerConfirmation>) -> Result<()>{
     if ctx.accounts.digital_transaction.metadata.transaction_state != TransactionState::BuyerConfirmedDelivery{
         return err!(DigitalMarketErrors::DidNotConfirmDelivery);
     }
+    ctx.accounts.digital_transaction.final_decision = BuyerDecisionState::Accept;
     ctx.accounts.digital_transaction.close_rate = 100;
-    ctx.accounts.digital_transaction.metadata.transaction_state = TransactionState::BuyerConfirmedProduct;
-
+    // we dont set state here because we need to wait for the seller to release the final keys
     Ok(())
 }
 
@@ -274,6 +269,7 @@ pub fn deny_accept_handler(ctx: Context<BuyerConfirmation>) -> Result<()>{
     if ctx.accounts.digital_transaction.metadata.transaction_state != TransactionState::BuyerConfirmedDelivery{
         return err!(DigitalMarketErrors::DidNotConfirmDelivery);
     }
+    ctx.accounts.digital_transaction.final_decision = BuyerDecisionState::Declined;
     ctx.accounts.digital_transaction.metadata.transaction_state = TransactionState::BuyerConfirmedProduct;
 
     Ok(())
@@ -308,7 +304,7 @@ pub fn seller_accept_transaction_handler(ctx: Context<SellerAcceptTransaction>) 
 pub struct CommitInitData<'info>{
     #[account(
         mut,
-        constraint = digital_transaction.metadata.transaction_state == TransactionState::SellerConfirmed
+        constraint = digital_transaction.metadata.transaction_state == TransactionState::BuyerFunded
     )]
     pub digital_transaction: Box<Account<'info, DigitalTransaction>>,
 
@@ -323,11 +319,15 @@ pub struct CommitInitData<'info>{
     pub seller_auth: Signer<'info>,
 }
 
-pub fn commit_init_keys_handler(ctx: Context<CommitInitData>, pem: String, index: u8) -> Result<()>{   
-    let rsa_pubkey = rsa::RsaPublicKey::from_pkcs1_pem(&pem).expect("could not decode public key");
-    let modulo = rsa_pubkey.n();
-    let exp = rsa_pubkey.e();
-    ctx.accounts.digital_transaction.rsa_pubkeys_array[index as usize] = [modulo.to_bytes_le().try_into().expect(""), exp.to_bytes_le().try_into().expect("")];
+pub fn commit_init_keys_handler(ctx: Context<CommitInitData>, submission_keys: Vec<Pubkey>) -> Result<()>{   
+    if submission_keys.len() > 64{
+        return err!(DigitalMarketErrors::IndexOutOfRange)
+    }
+
+    ctx.accounts.digital_transaction.num_keys = submission_keys.len() as u64;
+    ctx.accounts.digital_transaction.key_arr = submission_keys;
+
+
     Ok(())
 }
 
@@ -345,7 +345,7 @@ pub fn update_status_to_shipping_handler(ctx: Context<CommitInitData>) -> Result
 pub struct CommitSubKeys<'info>{
     #[account(
         mut,
-        constraint = digital_transaction.metadata.transaction_state == TransactionState::SellerConfirmed
+        constraint = digital_transaction.metadata.transaction_state == TransactionState::BuyerConfirmedDelivery
     )]
     pub digital_transaction: Box<Account<'info, DigitalTransaction>>,
 
@@ -360,15 +360,29 @@ pub struct CommitSubKeys<'info>{
     pub seller_auth: Signer<'info>,
 }
 
-pub fn commit_subkeys_handler(ctx: Context<CommitSubKeys>, index: u8, pem: String) -> Result<()>{
-    let rsa_priv_key = rsa::RsaPrivateKey::from_pkcs8_pem(&pem).expect("could not decode private key");
-    let rsa_pub_key = rsa::RsaPublicKey::from(rsa_priv_key);
+pub fn commit_subkeys_handler(ctx: Context<CommitSubKeys>, indexes: Vec<u8>) -> Result<()>{
+    for index in indexes{
+        if index > ctx.accounts.digital_transaction.key_arr.len() as u8{
+            return err!(DigitalMarketErrors::IndexOutOfRange)
+        }
 
-    if  (rsa::BigUint::from_bytes_le(&ctx.accounts.digital_transaction.rsa_pubkeys_array[index as usize][0]) != *rsa_pub_key.n()) ||
-        (rsa::BigUint::from_bytes_le(&ctx.accounts.digital_transaction.rsa_pubkeys_array[index as usize][1]) != *rsa_pub_key.e())
-    {
-        return err!(DigitalMarketErrors::IncorrectPrivateKey)
+        let acc = &ctx.remaining_accounts[index as usize];
+        if ! acc.is_signer{
+            return err!(DigitalMarketErrors::CorruptPrivateKeyFormat);
+        }
+
+        if Pubkey::find_program_address(&[acc.key().as_ref()], &id()).0 != ctx.accounts.digital_transaction.key_arr[index as usize]{
+            return err!(DigitalMarketErrors::IncorrectPrivateKey);
+        }
+
+        ctx.accounts.digital_transaction.num_keys &= u64::MAX - (1 << index);
+        ctx.accounts.digital_transaction.key_arr[index as usize] = acc.key();
     }
+
+    if ctx.accounts.digital_transaction.num_keys == 0{
+        ctx.accounts.digital_transaction.metadata.transaction_state = TransactionState::BuyerConfirmedProduct;
+    }
+
     Ok(())
 }
 

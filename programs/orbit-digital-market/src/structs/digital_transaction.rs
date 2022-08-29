@@ -4,21 +4,20 @@ use transaction::transaction_struct::OrbitTransaction;
 
 #[account]
 pub struct DigitalTransaction{
-    pub metadata: OrbitTransaction,
-    pub product: Pubkey,
+    pub metadata: OrbitTransaction, // 170
+    pub product: Pubkey, // 32
 
-    pub close_rate: u8,
+    pub close_rate: u8, // 1
 
-    // free the comish
-    pub has_comish: bool,
-    pub comish_account: Pubkey,
+    pub has_comish: bool, // 1
+    pub comish_account: Pubkey, // 32
 
-    pub data_address: [u8; 64],
-    pub rsa_pubkeys_array: [[[u8; 4]; 2]; 64], // 8 bytes
-    pub rsa_privkeys_array: [[[u8; 4]; 5]; 64], // 20 bytes
-    pub final_decision: BuyerDecisionState,
+    pub data_address: [u8; 64], // 64
+    pub num_keys: u64, // 8
+    pub key_arr: Vec<Pubkey>, // up to 2048
+    pub final_decision: BuyerDecisionState, // 1
 
-    pub reviews: TransactionReviews
+    pub reviews: TransactionReviews // 1
 }
 
 #[account]
@@ -37,5 +36,6 @@ pub struct ComishAccount{
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq)]
 pub enum BuyerDecisionState{
     Null,
-    Decided
+    Declined,
+    Accept
 }

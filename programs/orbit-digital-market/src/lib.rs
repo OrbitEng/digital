@@ -70,8 +70,20 @@ pub mod orbit_digital_market {
         deny_accept_handler(ctx)
     }
 
-    pub fn commit_pubkeys(ctx: Context<CommitInitData>, pem: String, index: u8) -> Result<()>{
-        commit_init_keys_handler(ctx, pem, index)
+    pub fn commit_init_keys(ctx: Context<CommitInitData>, submission_keys: Vec<Pubkey>) -> Result<()>{
+        commit_init_keys_handler(ctx, submission_keys)
+    }
+
+    pub fn commit_link(ctx: Context<CommitInitData>, link: [u8; 64]) -> Result<()>{
+        commit_link_handler(ctx, link)
+    }
+
+    pub fn update_status_to_shipping(ctx: Context<CommitInitData>) -> Result<()>{
+        update_status_to_shipping_handler(ctx)
+    }
+
+    pub fn commit_subkeys(ctx: Context<CommitSubKeys>, indexes: Vec<u8>) -> Result<()>{
+        commit_subkeys_handler(ctx, indexes)
     }
 
     pub fn seller_accept_transaction(ctx: Context<SellerAcceptTransaction>) -> Result<()>{
