@@ -6,7 +6,7 @@ use orbit_catalog::{cpi::{
 }, program::OrbitCatalog};
 
 #[derive(Accounts)]
-pub struct CreatePhysRecentCatalog<'info>{
+pub struct CreateDigitalRecentCatalog<'info>{
     #[account(
         seeds = [
             b"recent_catalog"
@@ -31,7 +31,7 @@ pub struct CreatePhysRecentCatalog<'info>{
     pub system_program: Program<'info, System>
 }
 
-pub fn recent_digital_catalog_handler(ctx: Context<CreatePhysRecentCatalog>) -> Result<()>{
+pub fn recent_digital_catalog_handler(ctx: Context<CreateDigitalRecentCatalog>) -> Result<()>{
     match ctx.bumps.get("market_auth"){
         Some(auth_bump) => create_catalog(
             CpiContext::new_with_signer(

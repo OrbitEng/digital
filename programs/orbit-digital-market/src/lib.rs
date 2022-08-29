@@ -19,6 +19,13 @@ pub mod orbit_digital_market {
     use market_accounts::structs::OrbitMarketAccountTrait;
 
     //////////////////////////
+    /// INITIALIZATION
+    
+    pub fn init_digital_recent_catalog(ctx: Context<CreateDigitalRecentCatalog>) -> Result<()>{
+        recent_digital_catalog_handler(ctx)
+    }
+
+    //////////////////////////
     /// TRANSACTION
 
     /// SOL
@@ -54,15 +61,17 @@ pub mod orbit_digital_market {
     pub fn confirm_delivered(ctx: Context<BuyerConfirmation>) -> Result<()>{
         confirm_delivered_handler(ctx)
     }
+    
     pub fn confirm_accept(ctx: Context<BuyerConfirmation>) -> Result<()>{
         confirm_accept_handler(ctx)
     }
+    
     pub fn deny_accept(ctx: Context<BuyerConfirmation>) -> Result<()>{
         deny_accept_handler(ctx)
     }
 
-    pub fn commit_keys(ctx: Context<CommitKeys>, keys: Vec<u8>, link: [u8; 64]) -> Result<()>{
-        commit_keys_handler(ctx, keys, link)
+    pub fn commit_keys(ctx: Context<CommitInitKeys>, keys: Vec<u8>, link: [u8; 64]) -> Result<()>{
+        commit_initkeys_handler(ctx, keys, link)
     }
 
     pub fn seller_accept_transaction(ctx: Context<SellerAcceptTransaction>) -> Result<()>{

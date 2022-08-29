@@ -275,7 +275,7 @@ pub fn deny_accept_handler(ctx: Context<BuyerConfirmation>) -> Result<()>{
 /// SELLER CONFIRMATIONS
 
 #[derive(Accounts)]
-pub struct CommitKeys<'info>{
+pub struct CommitInitKeys<'info>{
     #[account(
         mut,
         constraint = digital_transaction.metadata.transaction_state == TransactionState::SellerConfirmed
@@ -293,7 +293,7 @@ pub struct CommitKeys<'info>{
     pub seller_auth: Signer<'info>,
 }
 
-pub fn commit_keys_handler(ctx: Context<CommitKeys>, keys: Vec<u8>, link: [u8; 64]) -> Result<()>{
+pub fn commit_initkeys_handler(ctx: Context<CommitInitKeys>, keys: Vec<u8>, link: [u8; 64]) -> Result<()>{
     ctx.accounts.digital_transaction.metadata.transaction_state = TransactionState::Shipped;
     let mut key_arr = [[0 as u8; 16]; 64];
     // let mut key_arr = [[0 as u8; 16]; 64];
@@ -302,6 +302,29 @@ pub fn commit_keys_handler(ctx: Context<CommitKeys>, keys: Vec<u8>, link: [u8; 6
     };
     ctx.accounts.digital_transaction.keys_array = key_arr;
     ctx.accounts.digital_transaction.data_address = link;
+    Ok(())
+}
+
+#[derive(Accounts)]
+pub struct CommitSubKeys<'info>{
+    #[account(
+        mut,
+        constraint = digital_transaction.metadata.transaction_state == TransactionState::SellerConfirmed
+    )]
+    pub digital_transaction: Box<Account<'info, DigitalTransaction>>,
+
+    #[account(
+        address = digital_transaction.metadata.seller
+    )]
+    pub seller_account: Account<'info, OrbitMarketAccount>,
+
+    #[account(
+        address = seller_account.master_pubkey
+    )]
+    pub seller_auth: Signer<'info>,
+}
+
+pub fn commit_subkeys_handler(ctx: Context<CommitSubKeys>, index: u8, ) -> Result<()>{
     Ok(())
 }
 
