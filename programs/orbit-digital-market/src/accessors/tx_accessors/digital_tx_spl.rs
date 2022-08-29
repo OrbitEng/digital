@@ -6,7 +6,7 @@ use market_accounts::{
 use crate::{
     DigitalTransaction,
     DigitalProduct,
-    BuyerDecisionState,
+    BuyerDecisionState, program::OrbitDigitalMarket,
 };
 use transaction::transaction_struct::TransactionState;
 use anchor_spl::token::{
@@ -130,6 +130,8 @@ pub struct CloseDigitalTransactionSpl<'info>{
     pub market_account_program: Program<'info, OrbitMarketAccounts>,
 
     pub token_program: Program<'info, Token>,
+
+    pub digital_program: Program<'info, OrbitDigitalMarket>,
 }
 
 #[derive(Accounts)]

@@ -6,7 +6,7 @@ use market_accounts::{
 use crate::{
     DigitalTransaction,
     DigitalProduct,
-    BuyerDecisionState,
+    BuyerDecisionState, program::OrbitDigitalMarket,
 };
 use transaction::transaction_struct::TransactionState;
 
@@ -102,7 +102,9 @@ pub struct CloseDigitalTransactionSol<'info>{
     #[account(
         address = market_accounts::ID
     )]
-    pub market_account_program: Program<'info, OrbitMarketAccounts>
+    pub market_account_program: Program<'info, OrbitMarketAccounts>,
+
+    pub digital_program: Program<'info, OrbitDigitalMarket>,
 }
 
 #[derive(Accounts)]

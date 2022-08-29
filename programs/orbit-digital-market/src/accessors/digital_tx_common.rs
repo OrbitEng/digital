@@ -10,7 +10,7 @@ use anchor_lang::{
 use transaction::{transaction_trait::OrbitTransactionTrait, transaction_struct::TransactionState};
 use market_accounts::{
     market_account::OrbitMarketAccount, program::OrbitMarketAccounts,
-    cpi::accounts::SubmitRating,
+    cpi::accounts::PostTxContext,
     structs::{
         market_account_trait::OrbitMarketAccountTrait,
         TransactionReviews,
@@ -33,7 +33,8 @@ use crate::{
     CloseDigitalTransactionSpl,
     FundEscrowSpl,
 
-    post_tx_incrementing
+    post_tx_incrementing,
+    submit_rating_with_signer, program::OrbitDigitalMarket
 };
 
 ////////////////////////////////////////////////////////////////////
@@ -139,6 +140,7 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g> OrbitTransactionTrait<'a, 'b, 'c, 'd, 'e, 'f, '
                 ctx.accounts.buyer_account.to_account_info(),
                 ctx.accounts.seller_account.to_account_info(),
                 ctx.accounts.digital_auth.to_account_info(),
+                ctx.accounts.digital_program.to_account_info(),
                 &[&[b"market_authority", &[*auth_bump]]]
             ),
             None => return err!(DigitalMarketErrors::InvalidAuthBump)
@@ -175,6 +177,7 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g> OrbitTransactionTrait<'a, 'b, 'c, 'd, 'e, 'f, '
                     ctx.accounts.buyer_account.to_account_info(),
                     ctx.accounts.seller_account.to_account_info(),
                     ctx.accounts.digital_auth.to_account_info(),
+                    ctx.accounts.digital_program.to_account_info(),
                     &[&[b"market_authority", &[*auth_bump]]]
                 )
             },
@@ -383,6 +386,8 @@ pub struct LeaveReview<'info>{
         bump
     )]
     pub digital_auth: SystemAccount<'info>,
+
+    pub digital_program: Program<'info, OrbitDigitalMarket>
 }
 
 impl <'a> OrbitMarketAccountTrait<'a, LeaveReview<'a>> for DigitalTransaction{
@@ -401,6 +406,7 @@ impl <'a> OrbitMarketAccountTrait<'a, LeaveReview<'a>> for DigitalTransaction{
                         ctx.accounts.accounts_program.to_account_info(),
                         ctx.accounts.reviewed_account.to_account_info(),
                         ctx.accounts.digital_auth.to_account_info(),
+                        ctx.accounts.digital_program.to_account_info(),
                         &[&[b"market_authority", &[*auth_bump]]],
                         rating
                     );
@@ -416,6 +422,7 @@ impl <'a> OrbitMarketAccountTrait<'a, LeaveReview<'a>> for DigitalTransaction{
                         ctx.accounts.accounts_program.to_account_info(),
                         ctx.accounts.reviewed_account.to_account_info(),
                         ctx.accounts.digital_auth.to_account_info(),
+                        ctx.accounts.digital_program.to_account_info(),
                         &[&[b"market_authority", &[*auth_bump]]],
                         rating
                     );
@@ -432,19 +439,4 @@ impl <'a> OrbitMarketAccountTrait<'a, LeaveReview<'a>> for DigitalTransaction{
         Ok(())
     }
 
-}
-
-/// CHECK: has to be cpi because we can't write to a program we dont own (physical writing to market account directly)
-fn submit_rating_with_signer<'a>(market_program: AccountInfo<'a>, reviewed_account: AccountInfo<'a>, auth: AccountInfo<'a>, seeds: &[&[&[u8]]], rating: u8){
-    market_accounts::cpi::submit_rating(
-        CpiContext::new_with_signer(
-            market_program,
-            SubmitRating{
-                market_account: reviewed_account,
-                invoker: auth
-            },
-            seeds
-        ),
-        (rating-1) as usize
-    ).expect("could not call orbit accounts program");
 }
