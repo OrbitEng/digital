@@ -18,4 +18,8 @@ pub enum DigitalMarketErrors{
     InvalidEscrowBump,
     #[msg("Could not compute auth bump")]
     InvalidAuthBump,
+    #[msg("Could not decode private key from PEM")]
+    CorruptPrivateKeyFormat,
+    #[msg("Private and Public keys do not match")]
+    IncorrectPrivateKey,
 }

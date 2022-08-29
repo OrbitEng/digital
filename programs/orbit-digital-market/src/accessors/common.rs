@@ -55,7 +55,7 @@ pub fn post_tx_incrementing<'a>(account_program: AccountInfo<'a>, buyer_acc: Acc
         CpiContext::new_with_signer(
             account_program,
             PostTxContext{
-                market_account: buyer_acc,
+                market_account: seller_acc,
                 caller_auth: digital_auth,
                 caller: digital_program
             },

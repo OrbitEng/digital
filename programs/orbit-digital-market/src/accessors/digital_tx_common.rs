@@ -1,4 +1,5 @@
 use std::convert::TryInto;
+
 use anchor_lang::{
     prelude::*,
     AccountsClose,
@@ -7,10 +8,14 @@ use anchor_lang::{
         system_instruction::transfer
     }
 };
+use pkcs8::DecodePrivateKey;
+use rsa::{
+    pkcs1::DecodeRsaPublicKey,
+    PublicKeyParts
+};
 use transaction::{transaction_trait::OrbitTransactionTrait, transaction_struct::TransactionState};
 use market_accounts::{
     market_account::OrbitMarketAccount, program::OrbitMarketAccounts,
-    cpi::accounts::PostTxContext,
     structs::{
         market_account_trait::OrbitMarketAccountTrait,
         TransactionReviews,
@@ -278,7 +283,29 @@ pub fn deny_accept_handler(ctx: Context<BuyerConfirmation>) -> Result<()>{
 /// SELLER CONFIRMATIONS
 
 #[derive(Accounts)]
-pub struct CommitInitKeys<'info>{
+pub struct SellerAcceptTransaction<'info>{
+    #[account(
+        mut,
+        constraint = digital_transaction.metadata.transaction_state == TransactionState::Opened
+    )]
+    pub digital_transaction: Box<Account<'info, DigitalTransaction>>,
+
+    #[account(
+        address = digital_transaction.metadata.seller,
+        has_one = master_pubkey
+    )]
+    pub seller_account: Account<'info, OrbitMarketAccount>,
+
+    pub master_pubkey: Signer<'info>
+}
+
+pub fn seller_accept_transaction_handler(ctx: Context<SellerAcceptTransaction>) -> Result<()>{
+    ctx.accounts.digital_transaction.metadata.transaction_state = TransactionState::SellerConfirmed;
+    Ok(())
+}
+
+#[derive(Accounts)]
+pub struct CommitInitData<'info>{
     #[account(
         mut,
         constraint = digital_transaction.metadata.transaction_state == TransactionState::SellerConfirmed
@@ -296,15 +323,21 @@ pub struct CommitInitKeys<'info>{
     pub seller_auth: Signer<'info>,
 }
 
-pub fn commit_initkeys_handler(ctx: Context<CommitInitKeys>, keys: Vec<u8>, link: [u8; 64]) -> Result<()>{
-    ctx.accounts.digital_transaction.metadata.transaction_state = TransactionState::Shipped;
-    let mut key_arr = [[0 as u8; 16]; 64];
-    // let mut key_arr = [[0 as u8; 16]; 64];
-    for i in 0..(keys.len()/16){
-        key_arr[i] = keys[(16*i) as usize..((16*i)+15) as usize].try_into().expect("wrong key size");
-    };
-    ctx.accounts.digital_transaction.keys_array = key_arr;
+pub fn commit_init_keys_handler(ctx: Context<CommitInitData>, pem: String, index: u8) -> Result<()>{   
+    let rsa_pubkey = rsa::RsaPublicKey::from_pkcs1_pem(&pem).expect("could not decode public key");
+    let modulo = rsa_pubkey.n();
+    let exp = rsa_pubkey.e();
+    ctx.accounts.digital_transaction.rsa_pubkeys_array[index as usize] = [modulo.to_bytes_le().try_into().expect(""), exp.to_bytes_le().try_into().expect("")];
+    Ok(())
+}
+
+pub fn commit_link_handler(ctx: Context<CommitInitData>, link: [u8; 64]) -> Result<()>{
     ctx.accounts.digital_transaction.data_address = link;
+    Ok(())
+}
+
+pub fn update_status_to_shipping_handler(ctx: Context<CommitInitData>) -> Result<()>{
+    ctx.accounts.digital_transaction.metadata.transaction_state = TransactionState::Shipped;
     Ok(())
 }
 
@@ -327,29 +360,15 @@ pub struct CommitSubKeys<'info>{
     pub seller_auth: Signer<'info>,
 }
 
-pub fn commit_subkeys_handler(ctx: Context<CommitSubKeys>, index: u8, ) -> Result<()>{
-    Ok(())
-}
+pub fn commit_subkeys_handler(ctx: Context<CommitSubKeys>, index: u8, pem: String) -> Result<()>{
+    let rsa_priv_key = rsa::RsaPrivateKey::from_pkcs8_pem(&pem).expect("could not decode private key");
+    let rsa_pub_key = rsa::RsaPublicKey::from(rsa_priv_key);
 
-#[derive(Accounts)]
-pub struct SellerAcceptTransaction<'info>{
-    #[account(
-        mut,
-        constraint = digital_transaction.metadata.transaction_state == TransactionState::Opened
-    )]
-    pub digital_transaction: Box<Account<'info, DigitalTransaction>>,
-
-    #[account(
-        address = digital_transaction.metadata.seller,
-        has_one = master_pubkey
-    )]
-    pub seller_account: Account<'info, OrbitMarketAccount>,
-
-    pub master_pubkey: Signer<'info>
-}
-
-pub fn seller_accept_transaction_handler(ctx: Context<SellerAcceptTransaction>) -> Result<()>{
-    ctx.accounts.digital_transaction.metadata.transaction_state = TransactionState::SellerConfirmed;
+    if  (rsa::BigUint::from_bytes_le(&ctx.accounts.digital_transaction.rsa_pubkeys_array[index as usize][0]) != *rsa_pub_key.n()) ||
+        (rsa::BigUint::from_bytes_le(&ctx.accounts.digital_transaction.rsa_pubkeys_array[index as usize][1]) != *rsa_pub_key.e())
+    {
+        return err!(DigitalMarketErrors::IncorrectPrivateKey)
+    }
     Ok(())
 }
 

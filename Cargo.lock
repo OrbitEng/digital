@@ -956,8 +956,10 @@ version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
+ "getrandom 0.2.7",
  "market-accounts",
  "orbit-catalog",
+ "pkcs8",
  "product",
  "rsa",
  "transaction",

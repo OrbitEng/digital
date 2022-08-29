@@ -22,4 +22,6 @@ product = {git = "https://github.com/OrbitEng/product"}
 transaction = {git = "https://github.com/OrbitEng/transaction"}
 market-accounts =  {git = "https://github.com/OrbitEng/accounts", features=["cpi"]}
 orbit-catalog = {git = "https://github.com/OrbitEng/catalog", features = ["cpi"]}
+getrandom = { version = "0.2.2", features = ["custom"] }
+pkcs8 = "0.8.0"
 rsa = "0.6.1"
