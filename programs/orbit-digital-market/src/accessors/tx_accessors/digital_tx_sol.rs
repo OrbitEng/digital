@@ -14,7 +14,7 @@ use transaction::transaction_struct::TransactionState;
 pub struct OpenDigitalTransactionSol<'info>{
     #[account(
         init,
-        space = 2000,
+        space = 4000,
         payer = buyer_wallet,
     )]
     pub digital_transaction: Box<Account<'info, DigitalTransaction>>,
