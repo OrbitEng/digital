@@ -9,7 +9,7 @@ pub use accessors::*;
 pub use structs::*;
 pub use errors::*;
 
-declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+declare_id!("2aHLKzC457wjXPJz9Bd2QAqY6SGiUfUuMpKCYGCqEbpu");
 
 #[program]
 pub mod orbit_digital_market {
