@@ -5,7 +5,6 @@ use transaction::transaction_struct::OrbitTransaction;
 #[account]
 pub struct DigitalTransaction{
     pub metadata: OrbitTransaction, // 170
-    pub product: Pubkey, // 32
 
     pub close_rate: u8, // 1
 

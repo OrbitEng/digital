@@ -80,7 +80,6 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g> OrbitTransactionTrait<'a, 'b, 'c, 'd, 'e, 'f, '
         ctx.accounts.digital_transaction.close_rate = 0;
 
         ctx.accounts.digital_transaction.metadata.escrow_account = ctx.accounts.escrow_account.key();
-        ctx.accounts.digital_transaction.product = ctx.accounts.digital_product.key();
         ctx.accounts.digital_transaction.final_decision = BuyerDecisionState::Null;
 
         ctx.accounts.digital_transaction.reviews = TransactionReviews{
@@ -105,7 +104,6 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g> OrbitTransactionTrait<'a, 'b, 'c, 'd, 'e, 'f, '
         ctx.accounts.digital_transaction.close_rate = 0;
 
         ctx.accounts.digital_transaction.metadata.escrow_account = ctx.accounts.escrow_account.key();
-        ctx.accounts.digital_transaction.product = ctx.accounts.digital_product.key();
         ctx.accounts.digital_transaction.final_decision = BuyerDecisionState::Null;
 
         ctx.accounts.digital_transaction.reviews = TransactionReviews{

@@ -22,12 +22,6 @@ pub struct CreateComishAccount<'info>{
     pub digital_transaction: Box<Account<'info, DigitalTransaction>>,
 
     #[account(
-        address = digital_transaction.product,
-        constraint = digital_product.digital_product_type == DigitalProductType::Commission
-    )]
-    pub digital_product: Account<'info, DigitalProduct>,
-
-    #[account(
         constraint = (market_account.key() == digital_transaction.metadata.seller) || (market_account.key() == digital_transaction.metadata.buyer)
     )]
     pub market_account: Account<'info, OrbitMarketAccount>,
