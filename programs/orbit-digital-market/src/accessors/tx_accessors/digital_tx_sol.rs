@@ -3,6 +3,7 @@ use market_accounts::{
     OrbitMarketAccount,
     program::OrbitMarketAccounts
 };
+use orbit_multisig::Multisig;
 use crate::{
     DigitalTransaction,
     DigitalProduct,
@@ -33,6 +34,7 @@ pub struct OpenDigitalTransactionSol<'info>{
     )]
     pub escrow_account: SystemAccount<'info>,
 
+    #[account(mut)]
     pub buyer_account: Account<'info, OrbitMarketAccount>,
 
     #[account(mut)]
@@ -106,6 +108,21 @@ pub struct CloseDigitalTransactionSol<'info>{
     pub market_account_program: Program<'info, OrbitMarketAccounts>,
 
     pub digital_program: Program<'info, OrbitDigitalMarket>,
+
+    #[account(
+        mut,
+        address = Pubkey::new(orbit_addresses::MULTISIG_WALLET_ADDRESS)
+    )]
+    pub multisig_address: Account<'info, Multisig>,
+    
+    #[account(
+        mut,
+        seeds = [
+            multisig_address.key().as_ref()
+        ],
+        bump = multisig_address.nonce
+    )]
+    pub multisig_wallet: SystemAccount<'info>,
 }
 
 #[derive(Accounts)]

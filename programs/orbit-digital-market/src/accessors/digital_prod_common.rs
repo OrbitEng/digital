@@ -23,7 +23,7 @@ pub struct ListDigitalProduct<'info>{
     )]
     pub digital_product: Box<Account<'info, DigitalProduct>>,
 
-    pub seller_account: Account<'info, OrbitMarketAccount>,
+    pub seller_account: Box<Account<'info, OrbitMarketAccount>>,
 
     #[account(
         mut,
@@ -40,7 +40,7 @@ pub struct ListDigitalProduct<'info>{
         ],
         bump
     )]
-    pub recent_catalog: Account<'info, OrbitCatalogStruct>,
+    pub recent_catalog: Box<Account<'info, OrbitCatalogStruct>>,
 
     #[account(
         seeds = [

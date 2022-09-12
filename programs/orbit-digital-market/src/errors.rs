@@ -24,4 +24,6 @@ pub enum DigitalMarketErrors{
     IncorrectPrivateKey,
     #[msg("Private and Public keys do not match")]
     IndexOutOfRange,
+    #[msg("Can not use discounts on commissions")]
+    CannotDiscountCommission,
 }

@@ -3,6 +3,7 @@ use market_accounts::{
     OrbitMarketAccount,
     program::OrbitMarketAccounts
 };
+use orbit_multisig::Multisig;
 use crate::{
     DigitalTransaction,
     DigitalProduct,
@@ -47,6 +48,7 @@ pub struct OpenDigitalTransactionSpl<'info>{
     )]
     pub escrow_account: Account<'info, TokenAccount>,
 
+    #[account(mut)]
     pub buyer_account: Account<'info, OrbitMarketAccount>,
 
     #[account(mut)]
@@ -83,7 +85,7 @@ pub struct CloseDigitalTransactionSpl<'info>{
     #[account(
         address = digital_transaction.metadata.buyer
     )]
-    pub buyer_account: Account<'info, OrbitMarketAccount>,
+    pub buyer_account: Box<Account<'info, OrbitMarketAccount>>,
 
     #[account(
         mut,
@@ -92,9 +94,15 @@ pub struct CloseDigitalTransactionSpl<'info>{
     pub buyer_wallet: SystemAccount<'info>,
 
     #[account(
+        mut,
+        owner = buyer_account.wallet
+    )]
+    pub buyer_token_account: Account<'info, TokenAccount>,
+
+    #[account(
         address = digital_transaction.metadata.seller
     )]
-    pub seller_account: Account<'info, OrbitMarketAccount>,
+    pub seller_account: Box<Account<'info, OrbitMarketAccount>>,
 
     #[account(
         mut,
@@ -133,6 +141,28 @@ pub struct CloseDigitalTransactionSpl<'info>{
     pub token_program: Program<'info, Token>,
 
     pub digital_program: Program<'info, OrbitDigitalMarket>,
+    
+    #[account(
+        mut,
+        address = Pubkey::new(orbit_addresses::MULTISIG_WALLET_ADDRESS)
+    )]
+    pub multisig_address: Account<'info, Multisig>,
+
+    #[account(
+        mut,
+        seeds = [
+            b"multisig_auth",
+            multisig_address.key().as_ref()
+        ],
+        bump,
+        seeds::program = orbit_multisig::ID
+    )]
+    pub multisig_owner: SystemAccount<'info>,
+
+    #[account(
+        constraint = multisig_ata.owner == multisig_owner.key()
+    )]
+    pub multisig_ata: Account<'info, TokenAccount>,
 }
 
 #[derive(Accounts)]

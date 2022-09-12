@@ -857,7 +857,7 @@ checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 [[package]]
 name = "orbit-addresses"
 version = "0.1.0"
-source = "git+https://github.com/OrbitEng/addresses#1f3ef39f1cfe0f10221afdc65bfa3a777b68db93"
+source = "git+https://github.com/OrbitEng/addresses#04cd1d2ae80fd3ab7bc51e57bc201a82478812dd"
 dependencies = [
  "anchor-lang",
 ]
@@ -865,7 +865,7 @@ dependencies = [
 [[package]]
 name = "orbit-catalog"
 version = "0.1.0"
-source = "git+https://github.com/OrbitEng/catalog#8f18e84c3544d141514a6b364a02395a3ec6541a"
+source = "git+https://github.com/OrbitEng/catalog#abb75b0516203063eaa375c8286187593287386f"
 dependencies = [
  "anchor-lang",
  "orbit-addresses",
@@ -878,9 +878,19 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "market-accounts",
+ "orbit-addresses",
  "orbit-catalog",
+ "orbit-multisig",
  "product",
  "transaction",
+]
+
+[[package]]
+name = "orbit-multisig"
+version = "0.9.0"
+source = "git+https://github.com/OrbitEng/multisig#4e2059096b3df82ceec7db5388cb80862d80e4b5"
+dependencies = [
+ "anchor-lang",
 ]
 
 [[package]]
@@ -1364,7 +1374,7 @@ dependencies = [
 [[package]]
 name = "transaction"
 version = "0.1.0"
-source = "git+https://github.com/OrbitEng/transaction#d9c0fea85c3d2f456e9ff1f3e278293cff42012f"
+source = "git+https://github.com/OrbitEng/transaction#63300c7bc42b3562b80bdb6336cf526ccbfcba17"
 dependencies = [
  "anchor-lang",
  "product",

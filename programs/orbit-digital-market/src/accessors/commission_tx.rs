@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use market_accounts::OrbitMarketAccount;
 use transaction::transaction_struct::TransactionState;
-use crate::{DigitalProduct, DigitalTransaction, ComishAccount, DigitalProductType, DigitalMarketErrors};
+use crate::{DigitalTransaction, ComishAccount, DigitalMarketErrors};
 
 ////////////////////////////////////////////////////////////////////////////
 /// COMMISSION PRODUCT HELPERS

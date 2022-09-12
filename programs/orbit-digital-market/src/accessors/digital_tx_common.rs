@@ -66,7 +66,14 @@ pub struct CloseTransactionAccount<'info>{
 }
 
 impl<'a, 'b, 'c, 'd, 'e, 'f, 'g> OrbitTransactionTrait<'a, 'b, 'c, 'd, 'e, 'f, 'g, OpenDigitalTransactionSol<'a>, OpenDigitalTransactionSpl<'b>, CloseDigitalTransactionSol<'c>, CloseDigitalTransactionSpl<'d>, FundEscrowSol<'e>, FundEscrowSpl<'f>, CloseTransactionAccount<'g>> for DigitalTransaction{
-    fn open_sol(ctx: Context<OpenDigitalTransactionSol>, price: u64) -> Result<()>{
+    fn open_sol(ctx: Context<OpenDigitalTransactionSol>, mut price: u64, use_discount: bool) -> Result<()>{
+        if use_discount && ctx.accounts.buyer_account.dispute_discounts > 0{
+            ctx.accounts.digital_transaction.metadata.rate = 100;
+            price = price * 95 / 100;
+            ctx.accounts.buyer_account.dispute_discounts -=1;
+        }else{
+            ctx.accounts.digital_transaction.metadata.rate = 95
+        }
         ctx.accounts.digital_transaction.metadata.buyer = ctx.accounts.buyer_account.key();
         ctx.accounts.digital_transaction.metadata.seller = ctx.accounts.digital_product.metadata.seller;
         ctx.accounts.digital_transaction.metadata.product = ctx.accounts.digital_product.key();
@@ -90,7 +97,14 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g> OrbitTransactionTrait<'a, 'b, 'c, 'd, 'e, 'f, '
         Ok(())
     }
 
-    fn open_spl(ctx: Context<OpenDigitalTransactionSpl>, price: u64) -> Result<()>{
+    fn open_spl(ctx: Context<OpenDigitalTransactionSpl>, mut price: u64, use_discount: bool) -> Result<()>{
+        if use_discount && ctx.accounts.buyer_account.dispute_discounts > 0{
+            ctx.accounts.digital_transaction.metadata.rate = 100;
+            price = price * 95 / 100;
+            ctx.accounts.buyer_account.dispute_discounts -= 1;
+        }else{
+            ctx.accounts.digital_transaction.metadata.rate = 95
+        }
         ctx.accounts.digital_transaction.metadata.buyer = ctx.accounts.buyer_account.key();
         ctx.accounts.digital_transaction.metadata.seller = ctx.accounts.digital_product.metadata.seller;
         ctx.accounts.digital_transaction.metadata.product = ctx.accounts.digital_product.key();
@@ -116,6 +130,17 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g> OrbitTransactionTrait<'a, 'b, 'c, 'd, 'e, 'f, '
     fn close_sol(ctx: Context<CloseDigitalTransactionSol>) -> Result<()>{
         match ctx.bumps.get("escrow_account"){
             Some(escrow_bump) => {
+                if (ctx.accounts.digital_transaction.metadata.rate == 95)
+                && (ctx.accounts.digital_transaction.close_rate == 95)
+                && (ctx.accounts.digital_transaction.final_decision == BuyerDecisionState::Accept){
+                    close_escrow_sol(
+                        ctx.accounts.escrow_account.to_account_info(),
+                        ctx.accounts.multisig_wallet.to_account_info(),
+                        &[&[b"orbit_escrow_account", ctx.accounts.digital_transaction.key().as_ref(), &[*escrow_bump]]],
+                        5
+                    ).expect("could not transfer tokens");
+                }
+
                 close_escrow_sol(
                     ctx.accounts.escrow_account.to_account_info(),
                     ctx.accounts.seller_wallet.to_account_info(),
@@ -149,9 +174,22 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g> OrbitTransactionTrait<'a, 'b, 'c, 'd, 'e, 'f, '
     }
 
     fn close_spl(ctx: Context<CloseDigitalTransactionSpl>) -> Result<()>{
-
         match ctx.bumps.get("digital_auth"){
             Some(auth_bump) => {
+                if (ctx.accounts.digital_transaction.metadata.rate == 95)
+                && (ctx.accounts.digital_transaction.close_rate == 95)
+                && (ctx.accounts.digital_transaction.final_decision == BuyerDecisionState::Accept){
+                    close_escrow_spl(
+                        ctx.accounts.token_program.to_account_info(),
+                        ctx.accounts.escrow_account.to_account_info(),
+                        ctx.accounts.multisig_ata.to_account_info(),
+                        ctx.accounts.digital_auth.to_account_info(),
+                        &[&[b"market_authority", &[*auth_bump]]],
+                        ctx.accounts.digital_transaction.metadata.transaction_price,
+                        5
+                    ).expect("could not transfer tokens");
+                }
+
                 close_escrow_spl(
                     ctx.accounts.token_program.to_account_info(),
                     ctx.accounts.escrow_account.to_account_info(),
@@ -164,7 +202,7 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g> OrbitTransactionTrait<'a, 'b, 'c, 'd, 'e, 'f, '
                 close_escrow_spl(
                     ctx.accounts.token_program.to_account_info(),
                     ctx.accounts.escrow_account.to_account_info(),
-                    ctx.accounts.seller_token_account.to_account_info(),
+                    ctx.accounts.buyer_token_account.to_account_info(),
                     ctx.accounts.digital_auth.to_account_info(),
                     &[&[b"market_authority", &[*auth_bump]]],
                     ctx.accounts.digital_transaction.metadata.transaction_price,
@@ -237,6 +275,7 @@ pub struct BuyerConfirmation<'info>{
     pub digital_transaction: Box<Account<'info, DigitalTransaction>>,
 
     #[account(
+        mut,
         has_one = master_pubkey
     )]
     pub buyer_account: Account<'info, OrbitMarketAccount>,
@@ -258,7 +297,7 @@ pub fn confirm_accept_handler(ctx: Context<BuyerConfirmation>) -> Result<()>{
         return err!(DigitalMarketErrors::DidNotConfirmDelivery);
     }
     ctx.accounts.digital_transaction.final_decision = BuyerDecisionState::Accept;
-    ctx.accounts.digital_transaction.close_rate = 100;
+    ctx.accounts.digital_transaction.close_rate = ctx.accounts.digital_transaction.metadata.rate;
     // we dont set state here because we need to wait for the seller to release the final keys
     Ok(())
 }
@@ -267,9 +306,38 @@ pub fn deny_accept_handler(ctx: Context<BuyerConfirmation>) -> Result<()>{
     if ctx.accounts.digital_transaction.metadata.transaction_state != TransactionState::BuyerConfirmedDelivery{
         return err!(DigitalMarketErrors::DidNotConfirmDelivery);
     }
+    if ctx.accounts.digital_transaction.metadata.rate == 100{
+        ctx.accounts.buyer_account.dispute_discounts += 1;
+    }
     ctx.accounts.digital_transaction.final_decision = BuyerDecisionState::Declined;
     ctx.accounts.digital_transaction.metadata.transaction_state = TransactionState::BuyerConfirmedProduct;
 
+    Ok(())
+}
+
+
+#[derive(Accounts)]
+pub struct EarlyDeclineTransaction<'info>{
+    #[account(
+        mut,
+        constraint = digital_transaction.final_decision == BuyerDecisionState::Null
+    )]
+    pub digital_transaction: Account<'info, DigitalTransaction>,
+
+    #[account(
+        address = digital_transaction.metadata.buyer
+    )]
+    pub buyer: Account<'info, OrbitMarketAccount>,
+
+    #[account(
+        address = buyer.master_pubkey
+    )]
+    pub buyer_auth: Signer<'info>
+}
+
+pub fn early_decline_handler(ctx: Context<EarlyDeclineTransaction>) -> Result<()>{
+    ctx.accounts.digital_transaction.metadata.transaction_state = TransactionState::BuyerConfirmedProduct;
+    ctx.accounts.digital_transaction.final_decision = BuyerDecisionState::Declined;
     Ok(())
 }
 
