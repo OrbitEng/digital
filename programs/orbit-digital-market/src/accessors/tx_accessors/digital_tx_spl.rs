@@ -151,10 +151,9 @@ pub struct CloseDigitalTransactionSpl<'info>{
     #[account(
         mut,
         seeds = [
-            b"multisig_auth",
             multisig_address.key().as_ref()
         ],
-        bump,
+        bump = multisig_address.nonce,
         seeds::program = orbit_multisig::ID
     )]
     pub multisig_owner: SystemAccount<'info>,
