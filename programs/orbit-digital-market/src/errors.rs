@@ -26,4 +26,6 @@ pub enum DigitalMarketErrors{
     IndexOutOfRange,
     #[msg("Can not use discounts on commissions")]
     CannotDiscountCommission,
+    #[msg("invalid reflink passed")]
+    InvalidReflink,
 }

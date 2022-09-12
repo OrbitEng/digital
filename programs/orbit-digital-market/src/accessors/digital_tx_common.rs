@@ -6,7 +6,11 @@ use anchor_lang::{
         system_instruction::transfer
     }
 };
-use transaction::{transaction_trait::OrbitTransactionTrait, transaction_struct::TransactionState};
+use transaction::{
+    transaction_trait::OrbitTransactionTrait,
+    transaction_struct::TransactionState,
+    transaction_utils::*
+};
 use market_accounts::{
     market_account::OrbitMarketAccount, program::OrbitMarketAccounts,
     structs::{
@@ -20,8 +24,6 @@ use crate::{
     DigitalTransaction,
     DigitalMarketErrors,
     BuyerDecisionState,
-    close_escrow_sol,
-    close_escrow_spl,
 
     OpenDigitalTransactionSol,
     CloseDigitalTransactionSol,
@@ -30,9 +32,12 @@ use crate::{
     OpenDigitalTransactionSpl,
     CloseDigitalTransactionSpl,
     FundEscrowSpl,
-
-    post_tx_incrementing,
-    submit_rating_with_signer, program::OrbitDigitalMarket, id
+    
+    program::OrbitDigitalMarket, id
+};
+use anchor_spl::token::{
+    accessor::amount,
+    TokenAccount
 };
 
 ////////////////////////////////////////////////////////////////////
@@ -127,27 +132,48 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g> OrbitTransactionTrait<'a, 'b, 'c, 'd, 'e, 'f, '
         Ok(())
     }
 
-    fn close_sol(ctx: Context<CloseDigitalTransactionSol>) -> Result<()>{
+    fn close_sol(ctx: Context<'_, '_, '_, 'c, CloseDigitalTransactionSol<'c>>) -> Result<()>{
         match ctx.bumps.get("escrow_account"){
             Some(escrow_bump) => {
                 if (ctx.accounts.digital_transaction.metadata.rate == 95)
                 && (ctx.accounts.digital_transaction.close_rate == 95)
                 && (ctx.accounts.digital_transaction.final_decision == BuyerDecisionState::Accept){
-                    close_escrow_sol(
+                    let bal = ctx.accounts.escrow_account.lamports();
+                    let mut residual_amt = bal * 5/100;
+                    if  (ctx.accounts.buyer_account.reflink != Pubkey::new(&[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])) &&
+                        (ctx.remaining_accounts[0].key() == ctx.accounts.buyer_account.reflink)
+                    {
+                        let reflink_amt = bal * 25 / 10000;
+                        residual_amt = bal * 45/1000;
+                        close_escrow_sol_flat(
+                            ctx.accounts.escrow_account.to_account_info(),
+                            ctx.accounts.buyer_wallet.to_account_info(),
+                            &[&[b"orbit_escrow_account", ctx.accounts.digital_transaction.key().as_ref(), &[*escrow_bump]]],
+                            reflink_amt
+                        ).expect("couldnt close escrow");
+                        let reflink_wallet = SystemAccount::try_from(&ctx.remaining_accounts[0].to_account_info()).expect("system account");
+                        close_escrow_sol_flat(
+                            ctx.accounts.escrow_account.to_account_info(),
+                            reflink_wallet.to_account_info(),
+                            &[&[b"orbit_escrow_account", ctx.accounts.digital_transaction.key().as_ref(), &[*escrow_bump]]],
+                            reflink_amt
+                        ).expect("couldnt close escrow");
+                    }
+                    close_escrow_sol_flat(
                         ctx.accounts.escrow_account.to_account_info(),
                         ctx.accounts.multisig_wallet.to_account_info(),
                         &[&[b"orbit_escrow_account", ctx.accounts.digital_transaction.key().as_ref(), &[*escrow_bump]]],
-                        5
-                    ).expect("could not transfer tokens");
+                        residual_amt
+                    ).expect("couldnt close escrow");
                 }
 
-                close_escrow_sol(
+                close_escrow_sol_rate(
                     ctx.accounts.escrow_account.to_account_info(),
                     ctx.accounts.seller_wallet.to_account_info(),
                     &[&[b"orbit_escrow_account", ctx.accounts.digital_transaction.key().as_ref(), &[*escrow_bump]]],
                     ctx.accounts.digital_transaction.close_rate
                 ).expect("could not transfer tokens");
-                close_escrow_sol(
+                close_escrow_sol_rate(
                     ctx.accounts.escrow_account.to_account_info(),
                     ctx.accounts.buyer_wallet.to_account_info(),
                     &[&[b"orbit_escrow_account", ctx.accounts.digital_transaction.key().as_ref(), &[*escrow_bump]]],
@@ -173,24 +199,52 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g> OrbitTransactionTrait<'a, 'b, 'c, 'd, 'e, 'f, '
         Ok(())
     }
 
-    fn close_spl(ctx: Context<CloseDigitalTransactionSpl>) -> Result<()>{
+    fn close_spl(ctx: Context<'_, '_, '_, 'd, CloseDigitalTransactionSpl<'d>>) -> Result<()>{
         match ctx.bumps.get("digital_auth"){
             Some(auth_bump) => {
                 if (ctx.accounts.digital_transaction.metadata.rate == 95)
                 && (ctx.accounts.digital_transaction.close_rate == 95)
                 && (ctx.accounts.digital_transaction.final_decision == BuyerDecisionState::Accept){
-                    close_escrow_spl(
+                    let bal = amount(&ctx.accounts.escrow_account.to_account_info()).expect("could not deserialize token account");
+                    let mut residual_amt = bal * 5/100;
+                    if  (ctx.accounts.buyer_account.reflink != Pubkey::new(&[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])) &&
+                        (ctx.remaining_accounts[0].key() == ctx.accounts.buyer_account.reflink)
+                    {
+                        let reflink_amt = bal * 25 / 10000;
+                        residual_amt = bal * 45/1000;
+                        close_escrow_spl_flat(
+                            ctx.accounts.token_program.to_account_info(),
+                            ctx.accounts.escrow_account.to_account_info(),
+                            ctx.accounts.buyer_token_account.to_account_info(),
+                            ctx.accounts.digital_auth.to_account_info(),
+                            &[&[b"market_authority", &[*auth_bump]]],
+                            reflink_amt
+                        ).expect("couldnt close escrow");
+                        
+                        let reflink_token_account = Account::<TokenAccount>::try_from(&ctx.remaining_accounts[1].to_account_info()).expect("could not deserialize token account (remaining accounts 1)");
+                        if reflink_token_account.owner != ctx.accounts.buyer_account.reflink{
+                            return err!(DigitalMarketErrors::InvalidReflink)
+                        }
+                        close_escrow_spl_flat(
+                            ctx.accounts.token_program.to_account_info(),
+                            ctx.accounts.escrow_account.to_account_info(),
+                            reflink_token_account.to_account_info(),
+                            ctx.accounts.digital_auth.to_account_info(),
+                            &[&[b"market_authority", &[*auth_bump]]],
+                            reflink_amt
+                        ).expect("couldnt close escrow");
+                    }
+                    close_escrow_spl_flat(
                         ctx.accounts.token_program.to_account_info(),
                         ctx.accounts.escrow_account.to_account_info(),
                         ctx.accounts.multisig_ata.to_account_info(),
                         ctx.accounts.digital_auth.to_account_info(),
                         &[&[b"market_authority", &[*auth_bump]]],
-                        ctx.accounts.digital_transaction.metadata.transaction_price,
-                        5
-                    ).expect("could not transfer tokens");
+                        residual_amt
+                    ).expect("couldnt close escrow");
                 }
 
-                close_escrow_spl(
+                close_escrow_spl_rate(
                     ctx.accounts.token_program.to_account_info(),
                     ctx.accounts.escrow_account.to_account_info(),
                     ctx.accounts.seller_token_account.to_account_info(),
@@ -199,7 +253,7 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g> OrbitTransactionTrait<'a, 'b, 'c, 'd, 'e, 'f, '
                     ctx.accounts.digital_transaction.metadata.transaction_price,
                     ctx.accounts.digital_transaction.close_rate
                 ).expect("could not transfer tokens");
-                close_escrow_spl(
+                close_escrow_spl_rate(
                     ctx.accounts.token_program.to_account_info(),
                     ctx.accounts.escrow_account.to_account_info(),
                     ctx.accounts.buyer_token_account.to_account_info(),

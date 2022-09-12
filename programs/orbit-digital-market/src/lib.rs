@@ -33,7 +33,7 @@ pub mod orbit_digital_market {
         DigitalTransaction::open_sol(ctx, price, use_discount)
     }
 
-    pub fn close_transaction_sol(ctx: Context<CloseDigitalTransactionSol>) -> Result<()>{
+    pub fn close_transaction_sol<'a>(ctx: Context<'_, '_, '_, 'a, CloseDigitalTransactionSol<'a>>) -> Result<()>{
         DigitalTransaction::close_sol(ctx)
     }
 
@@ -46,7 +46,7 @@ pub mod orbit_digital_market {
         DigitalTransaction::open_spl(ctx, price, use_discount)
     }
 
-    pub fn close_transaction_spl(ctx: Context<CloseDigitalTransactionSpl>) -> Result<()>{
+    pub fn close_transaction_spl<'a>(ctx: Context<'_, '_, '_, 'a, CloseDigitalTransactionSpl<'a>>) -> Result<()>{
         DigitalTransaction::close_spl(ctx)
     }
 
