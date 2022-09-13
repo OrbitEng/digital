@@ -58,6 +58,7 @@ pub mod orbit_digital_market {
         DigitalTransaction::close_transaction_account(ctx)
     }
     
+    /// BUYER UTILS
     pub fn confirm_delivered(ctx: Context<BuyerConfirmation>) -> Result<()>{
         confirm_delivered_handler(ctx)
     }
@@ -70,6 +71,11 @@ pub mod orbit_digital_market {
         deny_accept_handler(ctx)
     }
 
+    pub fn early_decline(ctx: Context<EarlyDeclineTransaction>) -> Result<()>{
+        early_decline_handler(ctx)
+    }
+
+    /// SELLER UTILS
     pub fn commit_init_keys(ctx: Context<CommitInitData>, submission_keys: Vec<Pubkey>) -> Result<()>{
         commit_init_keys_handler(ctx, submission_keys)
     }
