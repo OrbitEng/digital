@@ -1,7 +1,7 @@
 [features]
 seeds = false
 [programs.localnet]
-orbit_digital_market = "2aHLKzC457wjXPJz9Bd2QAqY6SGiUfUuMpKCYGCqEbpu"
+orbit_digital_market = "DpKqMhUHc6YDjzGmxEKGZK8MxpdtW9X6jmYZrJ9UZj4g"
 
 [registry]
 url = "https://anchor.projectserum.com"
