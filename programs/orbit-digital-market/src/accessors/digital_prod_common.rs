@@ -101,7 +101,7 @@ impl<'a, 'b> OrbitProductTrait<'a, 'b, ListDigitalProduct<'a>, UnlistDigitalProd
 }
 
 #[derive(Accounts)]
-pub struct SetDigitalProductField<'info>{
+pub struct UpdateProductField<'info>{
 
     #[account(mut)]
     pub digital_product: Account<'info, DigitalProduct>,
@@ -118,26 +118,34 @@ pub struct SetDigitalProductField<'info>{
     pub seller_auth: Signer<'info>
 }
 
-pub fn set_product_type_handler(ctx: Context<SetDigitalProductField>, prod_type: DigitalProductType) -> Result<()>{
+pub fn set_product_type_handler(ctx: Context<UpdateProductField>, prod_type: DigitalProductType) -> Result<()>{
     ctx.accounts.digital_product.digital_product_type = prod_type;   
     Ok(())
 }
 
-pub fn set_file_type_handler(ctx: Context<SetDigitalProductField>, file_type: DigitalFileTypes) -> Result<()>{
+pub fn set_file_type_handler(ctx: Context<UpdateProductField>, file_type: DigitalFileTypes) -> Result<()>{
     ctx.accounts.digital_product.digital_file_type = file_type;   
     Ok(())
 }
 
-pub fn change_availability_handler(ctx: Context<SetDigitalProductField>, available: bool) -> Result<()>{
+pub fn change_availability_handler(ctx: Context<UpdateProductField>, available: bool) -> Result<()>{
     ctx.accounts.digital_product.metadata.available = available;
     Ok(())
 }
 
-pub fn change_price_handler(ctx: Context<SetDigitalProductField>, price: u64) -> Result<()>{
+/// GENERAL
+
+pub fn update_price_handler(ctx: Context<UpdateProductField>, price: u64) -> Result<()>{
     ctx.accounts.digital_product.metadata.price = price;
     Ok(())
 }
-pub fn update_currency_handler(ctx: Context<SetDigitalProductField>, currency: Pubkey) -> Result<()>{
+
+pub fn update_currency_handler(ctx: Context<UpdateProductField>, currency: Pubkey) -> Result<()>{
     ctx.accounts.digital_product.metadata.currency = currency;
+    Ok(())
+}
+
+pub fn set_media_handler(ctx: Context<UpdateProductField>, link: String) -> Result<()>{
+    ctx.accounts.digital_product.metadata.media = link;
     Ok(())
 }

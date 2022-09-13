@@ -106,20 +106,24 @@ pub mod orbit_digital_market {
         DigitalProduct::unlist(ctx)
     }
 
-    pub fn set_product_type(ctx: Context<SetDigitalProductField>, prod_type: DigitalProductType) -> Result<()>{
+    /// MODIFIERS
+    pub fn set_product_type(ctx: Context<UpdateProductField>, prod_type: DigitalProductType) -> Result<()>{
         set_product_type_handler(ctx, prod_type)
     }
-    pub fn set_file_type(ctx: Context<SetDigitalProductField>, file_type: DigitalFileTypes) -> Result<()>{
+    pub fn set_file_type(ctx: Context<UpdateProductField>, file_type: DigitalFileTypes) -> Result<()>{
         set_file_type_handler(ctx, file_type)
     }
-    pub fn change_availability(ctx: Context<SetDigitalProductField>, available: bool) -> Result<()>{
+    pub fn change_availability(ctx: Context<UpdateProductField>, available: bool) -> Result<()>{
         change_availability_handler(ctx, available)
     }
-    pub fn change_price(ctx: Context<SetDigitalProductField>, price: u64) -> Result<()>{
-        change_price_handler(ctx, price)
+    pub fn change_price(ctx: Context<UpdateProductField>, price: u64) -> Result<()>{
+        update_price_handler(ctx, price)
     }
-    pub fn update_currency(ctx: Context<SetDigitalProductField>, currency: Pubkey) -> Result<()>{
+    pub fn update_currency(ctx: Context<UpdateProductField>, currency: Pubkey) -> Result<()>{
         update_currency_handler(ctx, currency)
+    }
+    pub fn set_media(ctx: Context<UpdateProductField>, link: String) -> Result<()>{
+        set_media_handler(ctx, link)
     }
 
     ////////////////////////////////
