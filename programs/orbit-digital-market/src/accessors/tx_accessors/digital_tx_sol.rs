@@ -113,7 +113,7 @@ pub struct CloseDigitalTransactionSol<'info>{
         mut,
         address = Pubkey::new(orbit_addresses::MULTISIG_WALLET_ADDRESS)
     )]
-    pub multisig_address: Account<'info, Multisig>,
+    pub multisig_address: Box<Account<'info, Multisig>>,
     
     #[account(
         mut,
