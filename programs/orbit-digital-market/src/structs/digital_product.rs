@@ -19,5 +19,6 @@ pub enum DigitalFileTypes{
     Text,
     Video,
     Audio,
+    Image,
     Folder
 }
