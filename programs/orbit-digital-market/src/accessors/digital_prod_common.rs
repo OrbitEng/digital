@@ -6,7 +6,7 @@ use orbit_catalog::{
     structs::OrbitModCatalogStruct,
     cpi::{
         accounts::EditModCatalog,
-        edit_catalog
+        edit_mod_catalog
     }, program::OrbitCatalog
 };
 use market_accounts::OrbitMarketAccount;
@@ -80,7 +80,7 @@ impl<'a, 'b> OrbitProductTrait<'a, 'b, ListDigitalProduct<'a>, UnlistDigitalProd
         }
         ctx.accounts.digital_product.metadata = prod;
         match ctx.bumps.get("market_auth"){
-            Some(auth_bump) => edit_catalog(
+            Some(auth_bump) => edit_mod_catalog(
                 CpiContext::new_with_signer(
                     ctx.accounts.catalog_program.to_account_info(),
                     EditModCatalog {
@@ -146,5 +146,10 @@ pub fn update_currency_handler(ctx: Context<UpdateProductField>, currency: Pubke
 
 pub fn set_media_handler(ctx: Context<UpdateProductField>, link: String) -> Result<()>{
     ctx.accounts.digital_product.metadata.media = link;
+    Ok(())
+}
+
+pub fn set_name_handler(ctx: Context<UpdateProductField>, name: String) -> Result<()>{
+    ctx.accounts.digital_product.metadata.name = name;
     Ok(())
 }

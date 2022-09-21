@@ -125,6 +125,9 @@ pub mod orbit_digital_market {
     pub fn set_media(ctx: Context<UpdateProductField>, link: String) -> Result<()>{
         set_media_handler(ctx, link)
     }
+    pub fn set_name(ctx: Context<UpdateProductField>, name: String) -> Result<()>{
+        set_name_handler(ctx, name)
+    }
 
     ////////////////////////////////
     /// COMMISSION RELATED

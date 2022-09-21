@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use crate::DigitalMarketErrors;
 use orbit_catalog::{cpi::{
     accounts::CreateModCatalog,
-    create_catalog
+    create_mod_catalog
 }, program::OrbitCatalog};
 
 #[derive(Accounts)]
@@ -33,7 +33,7 @@ pub struct CreateDigitalRecentCatalog<'info>{
 
 pub fn recent_digital_catalog_handler(ctx: Context<CreateDigitalRecentCatalog>) -> Result<()>{
     match ctx.bumps.get("market_auth"){
-        Some(auth_bump) => create_catalog(
+        Some(auth_bump) => create_mod_catalog(
             CpiContext::new_with_signer(
                 ctx.accounts.catalog_program.to_account_info(),
                 CreateModCatalog {
