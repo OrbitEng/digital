@@ -14,7 +14,6 @@ declare_id!("DpKqMhUHc6YDjzGmxEKGZK8MxpdtW9X6jmYZrJ9UZj4g");
 #[program]
 pub mod orbit_digital_market {
     use super::*;
-    use product::product_trait::OrbitProductTrait;
     use transaction::transaction_trait::OrbitTransactionTrait;
     use market_accounts::structs::OrbitMarketAccountTrait;
 
@@ -98,18 +97,18 @@ pub mod orbit_digital_market {
 
     //////////////////////////////
     /// PRODUCT
-
-    pub fn list_digital_product(ctx: Context<ListDigitalProduct>, prod: OrbitProduct)-> Result<()>{
-        DigitalProduct::list(ctx, prod)
+    
+    pub fn list_template(ctx: Context<ListDigitalProductTemplate>, prod: OrbitProduct)-> Result<()> {
+        list_template_handler(ctx, prod)
+    }
+    pub fn list_commission(ctx: Context<ListDigitalProductCommission>, prod: OrbitProduct)-> Result<()> {
+        list_commission_handler(ctx, prod)
     }
     pub fn unlist_digital_product(ctx: Context<UnlistDigitalProduct>)-> Result<()>{
-        DigitalProduct::unlist(ctx)
+        unlist_product_handler(ctx)
     }
 
     /// MODIFIERS
-    pub fn set_product_type(ctx: Context<UpdateProductField>, prod_type: DigitalProductType) -> Result<()>{
-        set_product_type_handler(ctx, prod_type)
-    }
     pub fn set_file_type(ctx: Context<UpdateProductField>, file_type: DigitalFileTypes) -> Result<()>{
         set_file_type_handler(ctx, file_type)
     }
