@@ -51,14 +51,21 @@ pub struct CloseTransactionAccount<'info>{
     #[account(
         constraint = 
             (market_account.key() == digital_transaction.metadata.buyer) ||
-            (market_account.key() == digital_transaction.metadata.seller)
+            (market_account.key() == digital_transaction.metadata.seller),
+
+        seeds = [
+            b"orbit_account",
+            wallet.key().as_ref()
+        ],
+        bump,
+        seeds::program = market_accounts::ID
     )]
     pub market_account: Account<'info, OrbitMarketAccount>,
 
     #[account(
-        address = market_account.master_pubkey
+        address = market_account.wallet
     )]
-    pub account_auth: Signer<'info>,
+    pub wallet: Signer<'info>,
 
     #[account(
         mut,
@@ -330,11 +337,19 @@ pub struct BuyerConfirmation<'info>{
 
     #[account(
         mut,
-        has_one = master_pubkey
+        seeds = [
+            b"orbit_account",
+            wallet.key().as_ref()
+        ],
+        bump,
+        seeds::program = market_accounts::ID
     )]
     pub buyer_account: Account<'info, OrbitMarketAccount>,
 
-    pub master_pubkey: Signer<'info>,
+    #[account(
+        address = buyer_account.wallet
+    )]
+    pub wallet: Signer<'info>,
 }
 
 pub fn confirm_delivered_handler(ctx: Context<BuyerConfirmation>) -> Result<()>{
@@ -379,14 +394,20 @@ pub struct EarlyDeclineTransaction<'info>{
     pub digital_transaction: Account<'info, DigitalTransaction>,
 
     #[account(
-        address = digital_transaction.metadata.buyer
+        address = digital_transaction.metadata.buyer,
+        seeds = [
+            b"orbit_account",
+            wallet.key().as_ref()
+        ],
+        bump,
+        seeds::program = market_accounts::ID
     )]
     pub buyer: Account<'info, OrbitMarketAccount>,
 
     #[account(
-        address = buyer.master_pubkey
+        address = buyer.wallet
     )]
-    pub buyer_auth: Signer<'info>
+    pub wallet: Signer<'info>
 }
 
 pub fn early_decline_handler(ctx: Context<EarlyDeclineTransaction>) -> Result<()>{
@@ -408,11 +429,19 @@ pub struct SellerAcceptTransaction<'info>{
 
     #[account(
         address = digital_transaction.metadata.seller,
-        has_one = master_pubkey
+        seeds = [
+            b"orbit_account",
+            wallet.key().as_ref()
+        ],
+        bump,
+        seeds::program = market_accounts::ID
     )]
     pub seller_account: Account<'info, OrbitMarketAccount>,
 
-    pub master_pubkey: Signer<'info>
+    #[account(
+        address = seller_account.wallet
+    )]
+    pub wallet: Signer<'info>
 }
 
 pub fn seller_accept_transaction_handler(ctx: Context<SellerAcceptTransaction>) -> Result<()>{
@@ -429,14 +458,20 @@ pub struct CommitInitData<'info>{
     pub digital_transaction: Box<Account<'info, DigitalTransaction>>,
 
     #[account(
-        address = digital_transaction.metadata.seller
+        address = digital_transaction.metadata.seller,
+        seeds = [
+            b"orbit_account",
+            wallet.key().as_ref()
+        ],
+        bump,
+        seeds::program = market_accounts::ID
     )]
     pub seller_account: Account<'info, OrbitMarketAccount>,
 
     #[account(
-        address = seller_account.master_pubkey
+        address = seller_account.wallet,
     )]
-    pub seller_auth: Signer<'info>,
+    pub wallet: Signer<'info>,
 }
 
 pub fn commit_init_keys_handler(ctx: Context<CommitInitData>, submission_keys: Vec<Pubkey>) -> Result<()>{   
@@ -470,14 +505,20 @@ pub struct CommitSubKeys<'info>{
     pub digital_transaction: Box<Account<'info, DigitalTransaction>>,
 
     #[account(
-        address = digital_transaction.metadata.seller
+        address = digital_transaction.metadata.seller,
+        seeds = [
+            b"orbit_account",
+            wallet.key().as_ref()
+        ],
+        bump,
+        seeds::program = market_accounts::ID
     )]
     pub seller_account: Account<'info, OrbitMarketAccount>,
 
     #[account(
-        address = seller_account.master_pubkey
+        address = seller_account.wallet
     )]
-    pub seller_auth: Signer<'info>,
+    pub wallet: Signer<'info>,
 }
 
 pub fn commit_subkeys_handler(ctx: Context<CommitSubKeys>, indexes: Vec<u8>) -> Result<()>{
@@ -530,7 +571,8 @@ pub struct LeaveReview<'info>{
             b"orbit_account",
             wallet.key().as_ref()
         ],
-        bump
+        bump,
+        seeds::program = market_accounts::ID
     )]
     pub reviewer: Account<'info, OrbitMarketAccount>,
 

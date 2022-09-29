@@ -106,15 +106,21 @@ pub struct UpdateProductField<'info>{
     pub digital_product: Account<'info, DigitalProduct>,
 
     #[account(
-        address = digital_product.metadata.seller
+        address = digital_product.metadata.seller,
+        seeds = [
+            b"orbit_account",
+            wallet.key().as_ref()
+        ],
+        bump,
+        seeds::program = market_accounts::ID
     )]
     pub seller_account: Account<'info, OrbitMarketAccount>,
 
     #[account(
         mut,
-        address = seller_account.master_pubkey
+        address = seller_account.wallet
     )]
-    pub seller_auth: Signer<'info>
+    pub wallet: Signer<'info>
 }
 
 pub fn set_file_type_handler(ctx: Context<UpdateProductField>, file_type: DigitalFileTypes) -> Result<()>{

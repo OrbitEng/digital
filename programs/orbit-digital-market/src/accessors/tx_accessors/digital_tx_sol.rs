@@ -34,16 +34,22 @@ pub struct OpenDigitalTransactionSol<'info>{
     )]
     pub escrow_account: SystemAccount<'info>,
 
-    #[account(mut)]
+    #[account(
+        mut,
+        seeds = [
+            b"orbit_account",
+            buyer_wallet.key().as_ref()
+        ],
+        bump,
+        seeds::program = market_accounts::ID
+    )]
     pub buyer_account: Account<'info, OrbitMarketAccount>,
 
-    #[account(mut)]
-    pub buyer_wallet: Signer<'info>,
-
     #[account(
-        address = buyer_account.master_pubkey
+        mut,
+        address = buyer_account.wallet
     )]
-    pub buyer_auth: Signer<'info>,
+    pub buyer_wallet: Signer<'info>,
 
     pub system_program: Program<'info, System>
 }
@@ -91,11 +97,6 @@ pub struct CloseDigitalTransactionSol<'info>{
     pub escrow_account: SystemAccount<'info>,
 
     #[account(
-        constraint = (authority.key() == seller_account.master_pubkey) || (authority.key() == buyer_account.master_pubkey)
-    )]
-    pub authority: Signer<'info>,
-
-    #[account(
         seeds = [b"market_authority"],
         bump
     )]
@@ -133,7 +134,13 @@ pub struct FundEscrowSol<'info>{
     pub digital_transaction: Box<Account<'info, DigitalTransaction>>,
 
     #[account(
-        address = digital_transaction.metadata.buyer
+        address = digital_transaction.metadata.buyer,
+        seeds = [
+            b"orbit_account",
+            buyer_wallet.key().as_ref()
+        ],
+        bump,
+        seeds::program = market_accounts::ID
     )]
     pub buyer_account: Account<'info, OrbitMarketAccount>,
 
@@ -149,11 +156,9 @@ pub struct FundEscrowSol<'info>{
     )]
     pub escrow_account: SystemAccount<'info>,
 
-    #[account(mut)]
-    pub buyer_wallet: Signer<'info>,
-
     #[account(
-        address = buyer_account.master_pubkey
+        mut,
+        address = buyer_account.wallet
     )]
-    pub buyer_auth: Signer<'info>
+    pub buyer_wallet: Signer<'info>,
 }

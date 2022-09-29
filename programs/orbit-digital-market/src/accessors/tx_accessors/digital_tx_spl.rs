@@ -48,16 +48,22 @@ pub struct OpenDigitalTransactionSpl<'info>{
     )]
     pub escrow_account: Account<'info, TokenAccount>,
 
-    #[account(mut)]
+    #[account(
+        mut,
+        seeds = [
+            b"orbit_account",
+            buyer_wallet.key().as_ref()
+        ],
+        bump,
+        seeds::program = market_accounts::ID
+    )]
     pub buyer_account: Account<'info, OrbitMarketAccount>,
 
-    #[account(mut)]
-    pub buyer_wallet: Signer<'info>,
-
     #[account(
-        address = buyer_account.master_pubkey
+        mut,
+        address = buyer_account.wallet
     )]
-    pub buyer_auth: Signer<'info>,
+    pub buyer_wallet: Signer<'info>,
 
     pub system_program: Program<'info, System>,
 
@@ -122,11 +128,6 @@ pub struct CloseDigitalTransactionSpl<'info>{
     pub escrow_account: Account<'info, TokenAccount>,
 
     #[account(
-        constraint = (authority.key() == seller_account.master_pubkey) || (authority.key() == buyer_account.master_pubkey)
-    )]
-    pub authority: Signer<'info>,
-
-    #[account(
         seeds = [b"market_authority"],
         bump
     )]
@@ -183,21 +184,18 @@ pub struct FundEscrowSpl<'info>{
             digital_transaction.key().as_ref(),
         ],
         bump,
-
         address = digital_transaction.metadata.escrow_account
     )]
     pub escrow_account: Account<'info, TokenAccount>,
 
     #[account(
-        address = buyer_account.master_pubkey
+        address = buyer_account.wallet
     )]
-    pub buyer_auth: Signer<'info>,
+    pub buyer_wallet: Signer<'info>,
 
     #[account(
-        address = buyer_spl_wallet.owner
+        constraint = buyer_spl_wallet.owner == buyer_wallet.key()
     )]
-    pub wallet_owner: Signer<'info>,
-
     pub buyer_spl_wallet: Account<'info, TokenAccount>,
 
     pub token_program: Program<'info, Token>
