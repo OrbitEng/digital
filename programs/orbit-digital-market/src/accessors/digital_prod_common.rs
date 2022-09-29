@@ -73,7 +73,7 @@ pub struct UnlistDigitalProduct<'info>{
     pub seller_wallet: Signer<'info>,
 }
 
-impl <'a, 'b> OrbitProductTrait<'a, 'b, ListDigitalProduct, UnlistDigitalProduct> for DigitalProduct{
+impl <'a, 'b> OrbitProductTrait<'a, 'b, ListDigitalProduct<'a>, UnlistDigitalProduct<'b>> for DigitalProduct{
     fn list(ctx: Context<ListDigitalProduct>, prod: OrbitProduct)-> Result<()> {
         if prod.seller != ctx.accounts.seller_account.key() {
             return err!(DigitalMarketErrors::InvalidSellerForListing)
