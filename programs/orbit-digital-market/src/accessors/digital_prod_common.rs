@@ -10,11 +10,11 @@ use orbit_catalog::{
     }, program::OrbitCatalog
 };
 use market_accounts::OrbitMarketAccount;
-use product::product_struct::OrbitProduct;
+use product::{product_struct::OrbitProduct, product_trait::OrbitProductTrait};
 use crate::{DigitalProduct, DigitalFileTypes, DigitalMarketErrors, program::OrbitDigitalMarket, DigitalProductType};
 
 #[derive(Accounts)]
-pub struct ListDigitalProductCommission<'info>{
+pub struct ListDigitalProduct<'info>{
     
     #[account(
         init,
@@ -36,53 +36,11 @@ pub struct ListDigitalProductCommission<'info>{
     #[account(
         mut,
         seeds = [
-            b"recent_commission_catalog"
+            b"recent_catalog"
         ],
         bump
     )]
-    pub recent_commission_catalog: Box<Account<'info, OrbitModCatalogStruct>>,
-
-    #[account(
-        seeds = [
-            b"market_auth"
-        ],
-        bump
-    )]
-    pub market_auth: SystemAccount<'info>,
-
-    pub catalog_program: Program<'info, OrbitCatalog>,
-
-    pub digital_program: Program<'info, OrbitDigitalMarket>,
-}
-
-#[derive(Accounts)]
-pub struct ListDigitalProductTemplate<'info>{
-    
-    #[account(
-        init,
-        space = 200,
-        payer = seller_wallet
-    )]
-    pub digital_product: Box<Account<'info, DigitalProduct>>,
-
-    pub seller_account: Box<Account<'info, OrbitMarketAccount>>,
-
-    #[account(
-        mut,
-        address = seller_account.wallet
-    )]
-    pub seller_wallet: Signer<'info>,
-
-    pub system_program: Program<'info, System>,
-
-    #[account(
-        mut,
-        seeds = [
-            b"recent_template_catalog"
-        ],
-        bump
-    )]
-    pub recent_template_catalog: Box<Account<'info, OrbitModCatalogStruct>>,
+    pub recent_catalog: Box<Account<'info, OrbitModCatalogStruct>>,
 
     #[account(
         seeds = [
@@ -115,50 +73,30 @@ pub struct UnlistDigitalProduct<'info>{
     pub seller_wallet: Signer<'info>,
 }
 
-pub fn list_template_handler(ctx: Context<ListDigitalProductTemplate>, prod: OrbitProduct)-> Result<()> {
-    if prod.seller != ctx.accounts.seller_account.key() {
-        return err!(DigitalMarketErrors::InvalidSellerForListing)
+impl <'a, 'b> OrbitProductTrait<'a, 'b, ListDigitalProduct, UnlistDigitalProduct> for DigitalProduct{
+    fn list(ctx: Context<ListDigitalProduct>, prod: OrbitProduct)-> Result<()> {
+        if prod.seller != ctx.accounts.seller_account.key() {
+            return err!(DigitalMarketErrors::InvalidSellerForListing)
+        }
+        ctx.accounts.digital_product.metadata = prod;
+        match ctx.bumps.get("market_auth"){
+            Some(auth_bump) => edit_mod_catalog(
+                CpiContext::new_with_signer(
+                    ctx.accounts.catalog_program.to_account_info(),
+                    EditModCatalog {
+                        catalog: ctx.accounts.recent_catalog.to_account_info(),
+                        product: ctx.accounts.digital_product.to_account_info(),
+                        caller_auth: ctx.accounts.market_auth.to_account_info()
+                    },
+                    &[&[b"market_auth", &[*auth_bump]]])
+            ),
+            None => err!(DigitalMarketErrors::InvalidAuthBump)
+        }
     }
-    ctx.accounts.digital_product.metadata = prod;
-    ctx.accounts.digital_product.digital_product_type = DigitalProductType::Template;
-    match ctx.bumps.get("market_auth"){
-        Some(auth_bump) => edit_mod_catalog(
-            CpiContext::new_with_signer(
-                ctx.accounts.catalog_program.to_account_info(),
-                EditModCatalog {
-                    catalog: ctx.accounts.recent_template_catalog.to_account_info(),
-                    product: ctx.accounts.digital_product.to_account_info(),
-                    caller_auth: ctx.accounts.market_auth.to_account_info()
-                },
-                &[&[b"market_auth", &[*auth_bump]]])
-        ),
-        None => err!(DigitalMarketErrors::InvalidAuthBump)
-    }
-}
 
-pub fn list_commission_handler(ctx: Context<ListDigitalProductCommission>, prod: OrbitProduct)-> Result<()> {
-    if prod.seller != ctx.accounts.seller_account.key() {
-        return err!(DigitalMarketErrors::InvalidSellerForListing)
+    fn unlist(ctx: Context<UnlistDigitalProduct>)-> Result<()> {
+        ctx.accounts.digital_product.close(ctx.accounts.seller_wallet.to_account_info())
     }
-    ctx.accounts.digital_product.metadata = prod;
-    ctx.accounts.digital_product.digital_product_type = DigitalProductType::Commission;
-    match ctx.bumps.get("market_auth"){
-        Some(auth_bump) => edit_mod_catalog(
-            CpiContext::new_with_signer(
-                ctx.accounts.catalog_program.to_account_info(),
-                EditModCatalog {
-                    catalog: ctx.accounts.recent_commission_catalog.to_account_info(),
-                    product: ctx.accounts.digital_product.to_account_info(),
-                    caller_auth: ctx.accounts.market_auth.to_account_info()
-                },
-                &[&[b"market_auth", &[*auth_bump]]])
-        ),
-        None => err!(DigitalMarketErrors::InvalidAuthBump)
-    }
-}
-
-pub fn unlist_product_handler(ctx: Context<UnlistDigitalProduct>)-> Result<()> {
-    ctx.accounts.digital_product.close(ctx.accounts.seller_wallet.to_account_info())
 }
 
 #[derive(Accounts)]

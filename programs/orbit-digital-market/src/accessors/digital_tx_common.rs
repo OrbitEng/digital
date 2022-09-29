@@ -85,13 +85,11 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g> OrbitTransactionTrait<'a, 'b, 'c, 'd, 'e, 'f, '
         ctx.accounts.digital_transaction.metadata.currency = ctx.accounts.digital_product.metadata.currency;
 
         ctx.accounts.digital_transaction.num_keys = 0;
-        ctx.accounts.digital_transaction.has_comish = false;
-        ctx.accounts.digital_transaction.close_rate = 0;
 
         ctx.accounts.digital_transaction.metadata.escrow_account = ctx.accounts.escrow_account.key();
         ctx.accounts.digital_transaction.final_decision = BuyerDecisionState::Null;
 
-        ctx.accounts.digital_transaction.reviews = TransactionReviews{
+        ctx.accounts.digital_transaction.metadata.reviews = TransactionReviews{
             buyer: false,
             seller: false
         };
@@ -116,13 +114,11 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g> OrbitTransactionTrait<'a, 'b, 'c, 'd, 'e, 'f, '
         ctx.accounts.digital_transaction.metadata.currency = ctx.accounts.digital_product.metadata.currency;
         
         ctx.accounts.digital_transaction.num_keys = 0;
-        ctx.accounts.digital_transaction.has_comish = false;
-        ctx.accounts.digital_transaction.close_rate = 0;
 
         ctx.accounts.digital_transaction.metadata.escrow_account = ctx.accounts.escrow_account.key();
         ctx.accounts.digital_transaction.final_decision = BuyerDecisionState::Null;
 
-        ctx.accounts.digital_transaction.reviews = TransactionReviews{
+        ctx.accounts.digital_transaction.metadata.reviews = TransactionReviews{
             buyer: false,
             seller: false
         };
@@ -133,7 +129,6 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g> OrbitTransactionTrait<'a, 'b, 'c, 'd, 'e, 'f, '
         match ctx.bumps.get("escrow_account"){
             Some(escrow_bump) => {
                 if (ctx.accounts.digital_transaction.metadata.rate == 95)
-                && (ctx.accounts.digital_transaction.close_rate == 95)
                 && (ctx.accounts.digital_transaction.final_decision == BuyerDecisionState::Accept){
                     let bal = ctx.accounts.escrow_account.lamports();
                     let mut residual_amt = bal * 5/100;
@@ -173,7 +168,7 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g> OrbitTransactionTrait<'a, 'b, 'c, 'd, 'e, 'f, '
                     ctx.accounts.escrow_account.to_account_info(),
                     ctx.accounts.seller_wallet.to_account_info(),
                     &[&[b"orbit_escrow_account", ctx.accounts.digital_transaction.key().as_ref(), &[*escrow_bump]]],
-                    ctx.accounts.digital_transaction.close_rate
+                    ctx.accounts.digital_transaction.metadata.rate
                 ).expect("could not transfer tokens");
                 close_escrow_sol_rate(
                     ctx.accounts.escrow_account.to_account_info(),
@@ -205,7 +200,6 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g> OrbitTransactionTrait<'a, 'b, 'c, 'd, 'e, 'f, '
         match ctx.bumps.get("digital_auth"){
             Some(auth_bump) => {
                 if (ctx.accounts.digital_transaction.metadata.rate == 95)
-                && (ctx.accounts.digital_transaction.close_rate == 95)
                 && (ctx.accounts.digital_transaction.final_decision == BuyerDecisionState::Accept){
                     let bal = amount(&ctx.accounts.escrow_account.to_account_info()).expect("could not deserialize token account");
                     let mut residual_amt = bal * 5/100;
@@ -256,7 +250,7 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g> OrbitTransactionTrait<'a, 'b, 'c, 'd, 'e, 'f, '
                     ctx.accounts.digital_auth.to_account_info(),
                     &[&[b"market_authority", &[*auth_bump]]],
                     ctx.accounts.digital_transaction.metadata.transaction_price,
-                    ctx.accounts.digital_transaction.close_rate
+                    ctx.accounts.digital_transaction.metadata.rate
                 ).expect("could not transfer tokens");
                 close_escrow_spl_rate(
                     ctx.accounts.token_program.to_account_info(),
@@ -329,7 +323,8 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g> OrbitTransactionTrait<'a, 'b, 'c, 'd, 'e, 'f, '
 pub struct BuyerConfirmation<'info>{
     #[account(
         mut,
-        constraint = digital_transaction.metadata.buyer == buyer_account.key()
+        constraint = digital_transaction.metadata.buyer == buyer_account.key(),
+        constraint = digital_transaction.final_decision == BuyerDecisionState::Null,
     )]
     pub digital_transaction: Box<Account<'info, DigitalTransaction>>,
 
@@ -356,7 +351,6 @@ pub fn confirm_accept_handler(ctx: Context<BuyerConfirmation>) -> Result<()>{
         return err!(DigitalMarketErrors::DidNotConfirmDelivery);
     }
     ctx.accounts.digital_transaction.final_decision = BuyerDecisionState::Accept;
-    ctx.accounts.digital_transaction.close_rate = ctx.accounts.digital_transaction.metadata.rate;
     // we dont set state here because we need to wait for the seller to release the final keys
     Ok(())
 }
@@ -368,6 +362,7 @@ pub fn deny_accept_handler(ctx: Context<BuyerConfirmation>) -> Result<()>{
     if ctx.accounts.digital_transaction.metadata.rate == 100{
         ctx.accounts.buyer_account.dispute_discounts += 1;
     }
+    ctx.accounts.digital_transaction.metadata.rate = 0;
     ctx.accounts.digital_transaction.final_decision = BuyerDecisionState::Declined;
     ctx.accounts.digital_transaction.metadata.transaction_state = TransactionState::BuyerConfirmedProduct;
 
@@ -531,11 +526,18 @@ pub struct LeaveReview<'info>{
         constraint = 
         (reviewer.key() == digital_transaction.metadata.seller) ||
         (reviewer.key() == digital_transaction.metadata.buyer),
-        has_one = master_pubkey
+        seeds = [
+            b"orbit_account",
+            wallet.key().as_ref()
+        ],
+        bump
     )]
     pub reviewer: Account<'info, OrbitMarketAccount>,
 
-    pub master_pubkey: Signer<'info>,
+    #[account(
+        address = reviewer.wallet
+    )]
+    pub wallet: Signer<'info>,
 
     pub accounts_program: Program<'info, OrbitMarketAccounts>,
 
@@ -557,7 +559,7 @@ impl <'a> OrbitMarketAccountTrait<'a, LeaveReview<'a>> for DigitalTransaction{
             return err!(ReviewErrors::RatingOutsideRange)
         };
 
-        if ctx.accounts.digital_transaction.metadata.seller == ctx.accounts.reviewer.key() && !ctx.accounts.digital_transaction.reviews.seller{
+        if ctx.accounts.digital_transaction.metadata.seller == ctx.accounts.reviewer.key() && !ctx.accounts.digital_transaction.metadata.reviews.seller{
             match ctx.bumps.get("digital_auth"){
                 Some(auth_bump) => {
                     submit_rating_with_signer(
@@ -568,12 +570,12 @@ impl <'a> OrbitMarketAccountTrait<'a, LeaveReview<'a>> for DigitalTransaction{
                         &[&[b"market_authority", &[*auth_bump]]],
                         rating
                     );
-                    ctx.accounts.digital_transaction.reviews.seller = true;
+                    ctx.accounts.digital_transaction.metadata.seller = true;
                 },
                 None => return err!(MarketAccountErrors::CannotCallOrbitAccountsProgram)
-            }
+            };
         }else
-        if ctx.accounts.digital_transaction.metadata.buyer == ctx.accounts.reviewer.key()  && !ctx.accounts.digital_transaction.reviews.buyer{
+        if ctx.accounts.digital_transaction.metadata.buyer == ctx.accounts.reviewer.key()  && !ctx.accounts.digital_transaction.metadata.reviews.buyer{
             match ctx.bumps.get("digital_auth"){
                 Some(auth_bump) => {
                     submit_rating_with_signer(
@@ -584,11 +586,10 @@ impl <'a> OrbitMarketAccountTrait<'a, LeaveReview<'a>> for DigitalTransaction{
                         &[&[b"market_authority", &[*auth_bump]]],
                         rating
                     );
-                    ctx.accounts.digital_transaction.reviews.buyer = true;
+                    ctx.accounts.digital_transaction.metadata.reviews.buyer = true;
                 },
                 None => return err!(MarketAccountErrors::CannotCallOrbitAccountsProgram)
             }
-            ctx.accounts.digital_transaction.reviews.buyer = true;
         }else
         {
             return err!(ReviewErrors::InvalidReviewAuthority)

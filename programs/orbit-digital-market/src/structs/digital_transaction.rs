@@ -6,26 +6,10 @@ use transaction::transaction_struct::OrbitTransaction;
 pub struct DigitalTransaction{
     pub metadata: OrbitTransaction, // 170
 
-    pub close_rate: u8, // 1
-
-    pub has_comish: bool, // 1
-    pub comish_account: Pubkey, // 32
-
     pub data_address: [u8; 64], // 64
     pub num_keys: u64, // 8
     pub key_arr: Vec<Pubkey>, // up to 2048
     pub final_decision: BuyerDecisionState, // 1
-
-    pub reviews: TransactionReviews // 1
-}
-
-#[account]
-pub struct ComishAccount{
-    pub preview_address: [u8; 64],
-    pub preview_rate: u8,
-    pub last_rate_offerer: Pubkey,
-
-    pub funder: Pubkey,
 }
 
 // goes buyer conf. delivery -> buyer accepts/denies

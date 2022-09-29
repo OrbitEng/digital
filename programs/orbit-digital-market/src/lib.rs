@@ -98,13 +98,10 @@ pub mod orbit_digital_market {
     //////////////////////////////
     /// PRODUCT
     
-    pub fn list_template(ctx: Context<ListDigitalProductTemplate>, prod: OrbitProduct)-> Result<()> {
-        list_template_handler(ctx, prod)
+    pub fn list_product(ctx: Context<ListDigitalProduct>, prod: OrbitProduct)-> Result<()> {
+        list_handler(ctx, prod)
     }
-    pub fn list_commission(ctx: Context<ListDigitalProductCommission>, prod: OrbitProduct)-> Result<()> {
-        list_commission_handler(ctx, prod)
-    }
-    pub fn unlist_digital_product(ctx: Context<UnlistDigitalProduct>)-> Result<()>{
+    pub fn unlist_product(ctx: Context<UnlistDigitalProduct>)-> Result<()>{
         unlist_product_handler(ctx)
     }
 
@@ -126,22 +123,6 @@ pub mod orbit_digital_market {
     }
     pub fn set_prod_info(ctx: Context<UpdateProductField>, info: String) -> Result<()>{
         update_info_handler(ctx, info)
-    }
-
-    ////////////////////////////////
-    /// COMMISSION RELATED
-    
-    pub fn create_commission_account(ctx: Context<CreateComishAccount>) -> Result<()>{
-        create_commission_account_handler(ctx)
-    }
-    pub fn commit_preview(ctx: Context<CommitPreview>, link: [u8; 64]) -> Result<()>{
-        commit_preview_handler(ctx, link)
-    }
-    pub fn propose_rate(ctx: Context<UpdateRate>, new_rate: u8) -> Result<()>{
-        propose_rate_handler(ctx, new_rate)
-    }
-    pub fn accept_rate(ctx: Context<UpdateRate>) -> Result<()>{
-        accept_rate_handler(ctx)
     }
 
     /////////////////////////////////////////////////

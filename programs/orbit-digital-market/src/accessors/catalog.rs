@@ -9,19 +9,11 @@ use orbit_catalog::{cpi::{
 pub struct CreateDigitalRecentCatalog<'info>{
     #[account(
         seeds = [
-            b"recent_commission_catalog"
+            b"recent_catalog"
         ],
         bump
     )]
-    pub commission_catalog: SystemAccount<'info>,
-
-    #[account(
-        seeds = [
-            b"recent_template_catalog"
-        ],
-        bump
-    )]
-    pub template_catalog: SystemAccount<'info>,
+    pub catalog: SystemAccount<'info>,
 
     #[account(
         seeds = [
@@ -58,7 +50,7 @@ pub fn recent_digital_catalog_handler(ctx: Context<CreateDigitalRecentCatalog>) 
                 CpiContext::new_with_signer(
                     ctx.accounts.catalog_program.to_account_info(),
                     CreateModCatalog {
-                        catalog: ctx.accounts.template_catalog.to_account_info(),
+                        catalog: ctx.accounts.catalog.to_account_info(),
                         caller_auth: ctx.accounts.market_auth.to_account_info(),
                         payer: ctx.accounts.payer.to_account_info(),
                         system_program: ctx.accounts.system_program.to_account_info()

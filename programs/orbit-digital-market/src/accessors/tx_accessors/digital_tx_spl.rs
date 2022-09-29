@@ -76,9 +76,8 @@ pub struct OpenDigitalTransactionSpl<'info>{
 pub struct CloseDigitalTransactionSpl<'info>{
     #[account(
         mut,
-        constraint =    (digital_transaction.metadata.transaction_state == TransactionState::BuyerConfirmedProduct) ||
+        constraint =    ((digital_transaction.metadata.transaction_state == TransactionState::BuyerConfirmedProduct) && (digital_transaction.final_decision != BuyerDecisionState::Null)) ||
                         (digital_transaction.metadata.transaction_state == TransactionState::Opened),
-        constraint = digital_transaction.final_decision != BuyerDecisionState::Null,
     )]
     pub digital_transaction: Box<Account<'info, DigitalTransaction>>,
 
