@@ -16,6 +16,7 @@ pub mod orbit_digital_market {
     use super::*;
     use transaction::transaction_trait::OrbitTransactionTrait;
     use market_accounts::structs::OrbitMarketAccountTrait;
+    use product::product_trait::OrbitProductTrait;
 
     //////////////////////////
     /// INITIALIZATION
@@ -99,10 +100,10 @@ pub mod orbit_digital_market {
     /// PRODUCT
     
     pub fn list_product(ctx: Context<ListDigitalProduct>, prod: OrbitProduct)-> Result<()> {
-        list_handler(ctx, prod)
+        DigitalProduct::list(ctx, prod)
     }
     pub fn unlist_product(ctx: Context<UnlistDigitalProduct>)-> Result<()>{
-        unlist_product_handler(ctx)
+        DigitalProduct::unlist(ctx)
     }
 
     /// MODIFIERS
