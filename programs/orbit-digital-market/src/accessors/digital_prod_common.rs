@@ -11,7 +11,7 @@ use orbit_catalog::{
 };
 use market_accounts::OrbitMarketAccount;
 use product::{product_struct::OrbitProduct, product_trait::OrbitProductTrait};
-use crate::{DigitalProduct, DigitalFileTypes, DigitalMarketErrors, program::OrbitDigitalMarket, DigitalProductType};
+use crate::{DigitalProduct, DigitalFileTypes, DigitalMarketErrors, program::OrbitDigitalMarket};
 
 #[derive(Accounts)]
 pub struct ListDigitalProduct<'info>{
@@ -23,6 +23,14 @@ pub struct ListDigitalProduct<'info>{
     )]
     pub digital_product: Box<Account<'info, DigitalProduct>>,
 
+    #[account(
+        seeds = [
+            b"orbit_account",
+            seller_wallet.key().as_ref()
+        ],
+        bump,
+        seeds::program = market_accounts::ID
+    )]
     pub seller_account: Box<Account<'info, OrbitMarketAccount>>,
 
     #[account(

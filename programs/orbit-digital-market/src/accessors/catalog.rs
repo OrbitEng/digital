@@ -38,7 +38,7 @@ pub fn recent_digital_catalog_handler(ctx: Context<CreateDigitalRecentCatalog>) 
                 CpiContext::new_with_signer(
                     ctx.accounts.catalog_program.to_account_info(),
                     CreateModCatalog {
-                        catalog: ctx.accounts.commission_catalog.to_account_info(),
+                        catalog: ctx.accounts.catalog.to_account_info(),
                         caller_auth: ctx.accounts.market_auth.to_account_info(),
                         payer: ctx.accounts.payer.to_account_info(),
                         system_program: ctx.accounts.system_program.to_account_info()

@@ -1,12 +1,11 @@
 use anchor_lang::prelude::*;
-use market_accounts::structs::TransactionReviews;
 use transaction::transaction_struct::OrbitTransaction;
 
 #[account]
 pub struct DigitalTransaction{
     pub metadata: OrbitTransaction, // 170
 
-    pub data_address: [u8; 64], // 64
+    pub data_address: String, // 64
     pub num_keys: u64, // 8
     pub key_arr: Vec<Pubkey>, // up to 2048
     pub final_decision: BuyerDecisionState, // 1

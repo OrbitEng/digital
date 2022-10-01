@@ -80,7 +80,7 @@ pub mod orbit_digital_market {
         commit_init_keys_handler(ctx, submission_keys)
     }
 
-    pub fn commit_link(ctx: Context<CommitInitData>, link: [u8; 64]) -> Result<()>{
+    pub fn commit_link(ctx: Context<CommitInitData>, link: String) -> Result<()>{
         commit_link_handler(ctx, link)
     }
 

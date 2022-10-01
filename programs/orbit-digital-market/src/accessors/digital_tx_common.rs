@@ -9,15 +9,13 @@ use anchor_lang::{
 use transaction::{
     transaction_trait::OrbitTransactionTrait,
     transaction_struct::TransactionState,
+    TransactionReviews,
+    ReviewErrors,
     transaction_utils::*
 };
 use market_accounts::{
     market_account::OrbitMarketAccount, program::OrbitMarketAccounts,
-    structs::{
-        market_account_trait::OrbitMarketAccountTrait,
-        TransactionReviews,
-        ReviewErrors,
-    },
+    structs::market_account_trait::OrbitMarketAccountTrait,
     MarketAccountErrors
 };
 use crate::{
@@ -308,7 +306,7 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g> OrbitTransactionTrait<'a, 'b, 'c, 'd, 'e, 'f, '
                 anchor_spl::token::Transfer{
                     from: ctx.accounts.buyer_spl_wallet.to_account_info(),
                     to: ctx.accounts.escrow_account.to_account_info(),
-                    authority: ctx.accounts.wallet_owner.to_account_info()
+                    authority: ctx.accounts.buyer_wallet.to_account_info()
                 }
             ),
             ctx.accounts.digital_transaction.metadata.transaction_price
@@ -486,7 +484,7 @@ pub fn commit_init_keys_handler(ctx: Context<CommitInitData>, submission_keys: V
     Ok(())
 }
 
-pub fn commit_link_handler(ctx: Context<CommitInitData>, link: [u8; 64]) -> Result<()>{
+pub fn commit_link_handler(ctx: Context<CommitInitData>, link: String) -> Result<()>{
     ctx.accounts.digital_transaction.data_address = link;
     Ok(())
 }
@@ -612,7 +610,7 @@ impl <'a> OrbitMarketAccountTrait<'a, LeaveReview<'a>> for DigitalTransaction{
                         &[&[b"market_authority", &[*auth_bump]]],
                         rating
                     );
-                    ctx.accounts.digital_transaction.metadata.seller = true;
+                    ctx.accounts.digital_transaction.metadata.reviews.seller = true;
                 },
                 None => return err!(MarketAccountErrors::CannotCallOrbitAccountsProgram)
             };
