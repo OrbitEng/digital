@@ -66,8 +66,19 @@ pub struct CloseTransactionAccount<'info>{
     pub wallet: Signer<'info>,
 
     #[account(
+        address = digital_transaction.metadata.buyer,
+        seeds = [
+            b"orbit_account",
+            buyer_wallet.key().as_ref()
+        ],
+        bump,
+        seeds::program = market_accounts::ID
+    )]
+    pub buyer_account: Account<'info, OrbitMarketAccount>,
+
+    #[account(
         mut,
-        address = market_account.wallet
+        address = buyer_account.wallet
     )]
     pub buyer_wallet: SystemAccount<'info>
 }
@@ -317,7 +328,7 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g> OrbitTransactionTrait<'a, 'b, 'c, 'd, 'e, 'f, '
     }
 
     fn close_transaction_account(ctx: Context<CloseTransactionAccount>) -> Result<()>{
-        ctx.accounts.digital_transaction.close(ctx.accounts.market_account.to_account_info())
+        ctx.accounts.digital_transaction.close(ctx.accounts.buyer_account.to_account_info())
     }
 }
 
