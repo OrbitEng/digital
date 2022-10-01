@@ -109,7 +109,6 @@ impl <'a, 'b> OrbitProductTrait<'a, 'b, ListDigitalProduct<'a>, UnlistDigitalPro
 
 #[derive(Accounts)]
 pub struct UpdateProductField<'info>{
-
     #[account(mut)]
     pub digital_product: Account<'info, DigitalProduct>,
 
