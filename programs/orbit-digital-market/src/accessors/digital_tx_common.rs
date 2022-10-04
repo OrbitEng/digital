@@ -58,7 +58,7 @@ pub struct CloseTransactionAccount<'info>{
         bump,
         seeds::program = market_accounts::ID
     )]
-    pub market_account: Account<'info, OrbitMarketAccount>,
+    pub market_account:Box<Account<'info, OrbitMarketAccount>>,
 
     #[account(
         address = market_account.wallet
@@ -74,7 +74,7 @@ pub struct CloseTransactionAccount<'info>{
         bump,
         seeds::program = market_accounts::ID
     )]
-    pub buyer_account: Account<'info, OrbitMarketAccount>,
+    pub buyer_account:Box<Account<'info, OrbitMarketAccount>>,
 
     #[account(
         mut,
@@ -353,7 +353,7 @@ pub struct BuyerConfirmation<'info>{
         bump,
         seeds::program = market_accounts::ID
     )]
-    pub buyer_account: Account<'info, OrbitMarketAccount>,
+    pub buyer_account:Box<Account<'info, OrbitMarketAccount>>,
 
     #[account(
         address = buyer_account.wallet
@@ -411,7 +411,7 @@ pub struct EarlyDeclineTransaction<'info>{
         bump,
         seeds::program = market_accounts::ID
     )]
-    pub buyer: Account<'info, OrbitMarketAccount>,
+    pub buyer:Box<Account<'info, OrbitMarketAccount>>,
 
     #[account(
         address = buyer.wallet
@@ -445,7 +445,7 @@ pub struct SellerAcceptTransaction<'info>{
         bump,
         seeds::program = market_accounts::ID
     )]
-    pub seller_account: Account<'info, OrbitMarketAccount>,
+    pub seller_account:Box<Account<'info, OrbitMarketAccount>>,
 
     #[account(
         address = seller_account.wallet
@@ -475,7 +475,7 @@ pub struct CommitInitData<'info>{
         bump,
         seeds::program = market_accounts::ID
     )]
-    pub seller_account: Account<'info, OrbitMarketAccount>,
+    pub seller_account:Box<Account<'info, OrbitMarketAccount>>,
 
     #[account(
         address = seller_account.wallet,
@@ -522,7 +522,7 @@ pub struct CommitSubKeys<'info>{
         bump,
         seeds::program = market_accounts::ID
     )]
-    pub seller_account: Account<'info, OrbitMarketAccount>,
+    pub seller_account:Box<Account<'info, OrbitMarketAccount>>,
 
     #[account(
         address = seller_account.wallet
@@ -570,7 +570,7 @@ pub struct LeaveReview<'info>{
         (reviewer.key() == digital_transaction.metadata.seller) ||
         (reviewer.key() == digital_transaction.metadata.buyer)
     )]
-    pub reviewed_account: Account<'info, OrbitMarketAccount>,
+    pub reviewed_account:Box<Account<'info, OrbitMarketAccount>>,
 
     #[account(
         constraint = 
@@ -583,7 +583,7 @@ pub struct LeaveReview<'info>{
         bump,
         seeds::program = market_accounts::ID
     )]
-    pub reviewer: Account<'info, OrbitMarketAccount>,
+    pub reviewer:Box<Account<'info, OrbitMarketAccount>>,
 
     #[account(
         address = reviewer.wallet

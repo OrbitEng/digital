@@ -16,7 +16,7 @@ use transaction::transaction_struct::TransactionState;
 pub struct OpenDigitalTransactionSol<'info>{
     #[account(
         init,
-        space = 4000,
+        space = 3000,
         payer = buyer_wallet,
     )]
     pub digital_transaction: Box<Account<'info, DigitalTransaction>>,
@@ -24,17 +24,17 @@ pub struct OpenDigitalTransactionSol<'info>{
     #[account(
         constraint = digital_product.metadata.currency == System::id()
     )]
-    pub digital_product: Account<'info, DigitalProduct>,
+    pub digital_product: Box<Account<'info, DigitalProduct>>,
 
     #[account(
         constraint = seller_account.wallet == seller_catalog.catalog_owner
     )]
-    pub seller_account: Account<'info, OrbitMarketAccount>,
+    pub seller_account:Box<Account<'info, OrbitMarketAccount>>,
 
     #[account(
         address = digital_product.metadata.owner_catalog
     )]
-    pub seller_catalog: Account<'info, OrbitVendorCatalog>,
+    pub seller_catalog:Box<Account<'info, OrbitVendorCatalog>>,
 
     #[account(
         seeds = [
@@ -54,7 +54,7 @@ pub struct OpenDigitalTransactionSol<'info>{
         bump,
         seeds::program = market_accounts::ID
     )]
-    pub buyer_account: Account<'info, OrbitMarketAccount>,
+    pub buyer_account:Box<Account<'info, OrbitMarketAccount>>,
 
     #[account(
         mut,
@@ -77,7 +77,7 @@ pub struct CloseDigitalTransactionSol<'info>{
     #[account(
         address = digital_transaction.metadata.buyer
     )]
-    pub buyer_account: Account<'info, OrbitMarketAccount>,
+    pub buyer_account:Box<Account<'info, OrbitMarketAccount>>,
 
     #[account(
         mut,
@@ -88,7 +88,7 @@ pub struct CloseDigitalTransactionSol<'info>{
     #[account(
         address = digital_transaction.metadata.seller
     )]
-    pub seller_account: Account<'info, OrbitMarketAccount>,
+    pub seller_account:Box<Account<'info, OrbitMarketAccount>>,
 
     #[account(
         mut,
@@ -153,7 +153,7 @@ pub struct FundEscrowSol<'info>{
         bump,
         seeds::program = market_accounts::ID
     )]
-    pub buyer_account: Account<'info, OrbitMarketAccount>,
+    pub buyer_account:Box<Account<'info, OrbitMarketAccount>>,
 
     #[account(
         mut,

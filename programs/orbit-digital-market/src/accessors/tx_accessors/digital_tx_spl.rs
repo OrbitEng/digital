@@ -29,17 +29,17 @@ pub struct OpenDigitalTransactionSpl<'info>{
     #[account(
         constraint = digital_product.metadata.currency != System::id()
     )]
-    pub digital_product: Account<'info, DigitalProduct>,
+    pub digital_product: Box<Account<'info, DigitalProduct>>,
 
     #[account(
         constraint = seller_account.wallet == seller_catalog.catalog_owner
     )]
-    pub seller_account: Account<'info, OrbitMarketAccount>,
+    pub seller_account:Box<Account<'info, OrbitMarketAccount>>,
 
     #[account(
         address = digital_product.metadata.owner_catalog
     )]
-    pub seller_catalog: Account<'info, OrbitVendorCatalog>,
+    pub seller_catalog:Box<Account<'info, OrbitVendorCatalog>>,
 
     #[account(
         address = digital_product.metadata.currency
@@ -68,7 +68,7 @@ pub struct OpenDigitalTransactionSpl<'info>{
         bump,
         seeds::program = market_accounts::ID
     )]
-    pub buyer_account: Account<'info, OrbitMarketAccount>,
+    pub buyer_account:Box<Account<'info, OrbitMarketAccount>>,
 
     #[account(
         mut,
@@ -186,7 +186,7 @@ pub struct FundEscrowSpl<'info>{
     #[account(
         address = digital_transaction.metadata.buyer
     )]
-    pub buyer_account: Account<'info, OrbitMarketAccount>,
+    pub buyer_account:Box<Account<'info, OrbitMarketAccount>>,
 
     #[account(
         mut,

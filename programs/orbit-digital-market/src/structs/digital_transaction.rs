@@ -3,7 +3,7 @@ use transaction::transaction_struct::OrbitTransaction;
 
 #[account]
 pub struct DigitalTransaction{
-    pub metadata: OrbitTransaction, // 170
+    pub metadata: OrbitTransaction, // 172
 
     pub data_address: String, // 64
     pub num_keys: u64, // 8

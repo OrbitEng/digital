@@ -38,7 +38,7 @@ pub struct ListDigitalProduct<'info>{
     #[account(
         address = prod_in.owner_catalog
     )]
-    pub vendor_catalog: Account<'info, OrbitVendorCatalog>,
+    pub vendor_catalog:Box<Account<'info, OrbitVendorCatalog>>,
 
     #[account(
         mut,
@@ -74,12 +74,12 @@ pub struct ListDigitalProduct<'info>{
 pub struct UnlistDigitalProduct<'info>{
 
     #[account(mut)]
-    pub digital_product: Account<'info, DigitalProduct>,
+    pub digital_product: Box<Account<'info, DigitalProduct>>,
 
     #[account(
         address = digital_product.metadata.owner_catalog
     )]
-    pub vendor_catalog: Account<'info, OrbitVendorCatalog>,
+    pub vendor_catalog:Box<Account<'info, OrbitVendorCatalog>>,
 
     #[account(
         mut,
@@ -141,12 +141,12 @@ impl <'a, 'b> OrbitProductTrait<'a, 'b, ListDigitalProduct<'a>, UnlistDigitalPro
 #[derive(Accounts, CommonProdUtils)]
 pub struct UpdateProductField<'info>{
     #[account(mut)]
-    pub digital_product: Account<'info, DigitalProduct>,
+    pub digital_product: Box<Account<'info, DigitalProduct>>,
 
     #[account(
         address = digital_product.metadata.owner_catalog
     )]
-    pub vendor_catalog: Account<'info, OrbitVendorCatalog>,
+    pub vendor_catalog:Box<Account<'info, OrbitVendorCatalog>>,
 
     #[account(
         mut,
