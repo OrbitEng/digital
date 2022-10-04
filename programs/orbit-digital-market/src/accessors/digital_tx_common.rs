@@ -93,7 +93,7 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g> OrbitTransactionTrait<'a, 'b, 'c, 'd, 'e, 'f, '
             ctx.accounts.digital_transaction.metadata.rate = 95
         }
         ctx.accounts.digital_transaction.metadata.buyer = ctx.accounts.buyer_account.key();
-        ctx.accounts.digital_transaction.metadata.seller = ctx.accounts.digital_product.metadata.seller;
+        ctx.accounts.digital_transaction.metadata.seller = ctx.accounts.seller_account.key();
         ctx.accounts.digital_transaction.metadata.product = ctx.accounts.digital_product.key();
         ctx.accounts.digital_transaction.metadata.transaction_state = TransactionState::Opened;
         ctx.accounts.digital_transaction.metadata.transaction_price = price;
@@ -122,7 +122,7 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g> OrbitTransactionTrait<'a, 'b, 'c, 'd, 'e, 'f, '
             ctx.accounts.digital_transaction.metadata.rate = 95
         }
         ctx.accounts.digital_transaction.metadata.buyer = ctx.accounts.buyer_account.key();
-        ctx.accounts.digital_transaction.metadata.seller = ctx.accounts.digital_product.metadata.seller;
+        ctx.accounts.digital_transaction.metadata.seller = ctx.accounts.seller_account.key();
         ctx.accounts.digital_transaction.metadata.product = ctx.accounts.digital_product.key();
         ctx.accounts.digital_transaction.metadata.transaction_state = TransactionState::Opened;
         ctx.accounts.digital_transaction.metadata.transaction_price = price;

@@ -3,6 +3,7 @@ use market_accounts::{
     OrbitMarketAccount,
     program::OrbitMarketAccounts
 };
+use orbit_catalog::OrbitVendorCatalog;
 use orbit_multisig::Multisig;
 use crate::{
     DigitalTransaction,
@@ -29,6 +30,16 @@ pub struct OpenDigitalTransactionSpl<'info>{
         constraint = digital_product.metadata.currency != System::id()
     )]
     pub digital_product: Account<'info, DigitalProduct>,
+
+    #[account(
+        constraint = seller_account.wallet == seller_catalog.catalog_owner
+    )]
+    pub seller_account: Account<'info, OrbitMarketAccount>,
+
+    #[account(
+        address = digital_product.metadata.owner_catalog
+    )]
+    pub seller_catalog: Account<'info, OrbitVendorCatalog>,
 
     #[account(
         address = digital_product.metadata.currency

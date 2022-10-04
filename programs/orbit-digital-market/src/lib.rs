@@ -110,9 +110,6 @@ pub mod orbit_digital_market {
     pub fn set_file_type(ctx: Context<UpdateProductField>, file_type: DigitalFileTypes) -> Result<()>{
         set_file_type_handler(ctx, file_type)
     }
-    pub fn change_availability(ctx: Context<UpdateProductField>, available: bool) -> Result<()>{
-        change_availability_handler(ctx, available)
-    }
     pub fn change_price(ctx: Context<UpdateProductField>, price: u64) -> Result<()>{
         update_price_handler(ctx, price)
     }
