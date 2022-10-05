@@ -99,7 +99,7 @@ pub struct CloseDigitalTransactionSpl<'info>{
     pub digital_transaction: Box<Account<'info, DigitalTransaction>>,
 
     #[account(
-        address = digital_transaction.metadata.buyer
+        constraint = buyer_account.voter_id == digital_transaction.metadata.buyer
     )]
     pub buyer_account: Box<Account<'info, OrbitMarketAccount>>,
 
@@ -116,7 +116,7 @@ pub struct CloseDigitalTransactionSpl<'info>{
     pub buyer_token_account: Account<'info, TokenAccount>,
 
     #[account(
-        address = digital_transaction.metadata.seller
+        constraint = seller_account.voter_id == digital_transaction.metadata.seller
     )]
     pub seller_account: Box<Account<'info, OrbitMarketAccount>>,
 
@@ -184,7 +184,7 @@ pub struct FundEscrowSpl<'info>{
     pub digital_transaction: Box<Account<'info, DigitalTransaction>>,
 
     #[account(
-        address = digital_transaction.metadata.buyer
+        constraint = buyer_account.voter_id == digital_transaction.metadata.buyer
     )]
     pub buyer_account:Box<Account<'info, OrbitMarketAccount>>,
 
