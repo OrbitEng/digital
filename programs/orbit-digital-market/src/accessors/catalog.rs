@@ -8,6 +8,7 @@ use orbit_catalog::{cpi::{
 #[derive(Accounts)]
 pub struct CreateDigitalRecentCatalog<'info>{
     #[account(
+        mut,
         seeds = [
             b"recent_catalog"
         ],
