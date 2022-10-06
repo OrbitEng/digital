@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use crate::DigitalMarketErrors;
+use crate::{DigitalMarketErrors, program::OrbitDigitalMarket};
 use orbit_catalog::{cpi::{
     accounts::CreateMarketCatalog,
     init_market_catalog
@@ -14,6 +14,8 @@ pub struct CreateDigitalRecentCatalog<'info>{
         bump
     )]
     pub catalog: SystemAccount<'info>,
+    
+    pub self_program: Program<'info, OrbitDigitalMarket>,
 
     #[account(
         seeds = [
@@ -32,32 +34,23 @@ pub struct CreateDigitalRecentCatalog<'info>{
 }
 
 pub fn recent_digital_catalog_handler(ctx: Context<CreateDigitalRecentCatalog>) -> Result<()>{
-    match ctx.bumps.get("market_auth"){
-        Some(auth_bump) => {
-            init_market_catalog(
-                CpiContext::new_with_signer(
-                    ctx.accounts.catalog_program.to_account_info(),
-                    CreateMarketCatalog {
-                        catalog: ctx.accounts.catalog.to_account_info(),
-                        payer: ctx.accounts.payer.to_account_info(),
-                        system_program: ctx.accounts.system_program.to_account_info()
-                    },
-                    &[&[b"market_auth", &[*auth_bump]]]
-                )
-            ).expect("could not init mod catalog");
-            init_market_catalog(
-                CpiContext::new_with_signer(
-                    ctx.accounts.catalog_program.to_account_info(),
-                    CreateMarketCatalog {
-                        catalog: ctx.accounts.catalog.to_account_info(),
-                        payer: ctx.accounts.payer.to_account_info(),
-                        system_program: ctx.accounts.system_program.to_account_info()
-                    },
-                    &[&[b"market_auth", &[*auth_bump]]]
-                )
-            )
-        },
-        None => err!(DigitalMarketErrors::InvalidAuthBump)
-    }
     
+    if let Some(catalog_bump) = ctx.bumps.get("catalog"){
+        init_market_catalog(
+            CpiContext::new_with_signer(
+                ctx.accounts.catalog_program.to_account_info(),
+                CreateMarketCatalog {
+                    catalog: ctx.accounts.catalog.to_account_info(),
+                    market_auth: ctx.accounts.market_auth.to_account_info(),
+                    invoker: ctx.accounts.self_program.to_account_info(),
+                    payer: ctx.accounts.payer.to_account_info(),
+                    system_program: ctx.accounts.system_program.to_account_info()
+                },
+                &[&[b"recent_catalog", &[*catalog_bump]]]
+            )
+        )
+    }else{
+        return err!(DigitalMarketErrors::InvalidAuthBump)
+    }
+
 }
