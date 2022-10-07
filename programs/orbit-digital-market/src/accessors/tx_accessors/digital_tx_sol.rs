@@ -75,7 +75,7 @@ pub struct CloseDigitalTransactionSol<'info>{
     pub digital_transaction: Box<Account<'info, DigitalTransaction>>,
 
     #[account(
-        constraint = buyer_account.voter_id == digital_transaction.metadata.buyer
+        constraint = buyer_account.key() == digital_transaction.metadata.buyer
     )]
     pub buyer_account:Box<Account<'info, OrbitMarketAccount>>,
 
@@ -86,7 +86,7 @@ pub struct CloseDigitalTransactionSol<'info>{
     pub buyer_wallet: SystemAccount<'info>,
 
     #[account(
-        constraint = seller_account.voter_id == digital_transaction.metadata.seller
+        constraint = seller_account.key() == digital_transaction.metadata.seller
     )]
     pub seller_account:Box<Account<'info, OrbitMarketAccount>>,
 
@@ -145,7 +145,7 @@ pub struct FundEscrowSol<'info>{
     pub digital_transaction: Box<Account<'info, DigitalTransaction>>,
 
     #[account(
-        constraint = buyer_account.voter_id == digital_transaction.metadata.buyer,
+        constraint = buyer_account.key() == digital_transaction.metadata.buyer,
         seeds = [
             b"orbit_account",
             buyer_wallet.key().as_ref()

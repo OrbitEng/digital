@@ -48,8 +48,8 @@ pub struct CloseTransactionAccount<'info>{
 
     #[account(
         constraint = 
-            (market_account.voter_id == digital_transaction.metadata.buyer) ||
-            (market_account.voter_id == digital_transaction.metadata.seller),
+            (market_account.key() == digital_transaction.metadata.buyer) ||
+            (market_account.key() == digital_transaction.metadata.seller),
 
         seeds = [
             b"orbit_account",
@@ -66,7 +66,7 @@ pub struct CloseTransactionAccount<'info>{
     pub wallet: Signer<'info>,
 
     #[account(
-        constraint = buyer_account.voter_id ==  digital_transaction.metadata.buyer,
+        constraint = buyer_account.key() ==  digital_transaction.metadata.buyer,
         seeds = [
             b"orbit_account",
             buyer_wallet.key().as_ref()
@@ -92,8 +92,8 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g> OrbitTransactionTrait<'a, 'b, 'c, 'd, 'e, 'f, '
         }else{
             ctx.accounts.digital_transaction.metadata.rate = 95
         }
-        ctx.accounts.digital_transaction.metadata.buyer = ctx.accounts.buyer_account.voter_id;
-        ctx.accounts.digital_transaction.metadata.seller = ctx.accounts.seller_account.voter_id;
+        ctx.accounts.digital_transaction.metadata.buyer = ctx.accounts.buyer_account.key();
+        ctx.accounts.digital_transaction.metadata.seller = ctx.accounts.seller_account.key();
         ctx.accounts.digital_transaction.metadata.product = ctx.accounts.digital_product.key();
         ctx.accounts.digital_transaction.metadata.transaction_state = TransactionState::Opened;
         ctx.accounts.digital_transaction.metadata.transaction_price = price;
@@ -121,8 +121,8 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g> OrbitTransactionTrait<'a, 'b, 'c, 'd, 'e, 'f, '
         }else{
             ctx.accounts.digital_transaction.metadata.rate = 95
         }
-        ctx.accounts.digital_transaction.metadata.buyer = ctx.accounts.buyer_account.voter_id;
-        ctx.accounts.digital_transaction.metadata.seller = ctx.accounts.seller_account.voter_id;
+        ctx.accounts.digital_transaction.metadata.buyer = ctx.accounts.buyer_account.key();
+        ctx.accounts.digital_transaction.metadata.seller = ctx.accounts.seller_account.key();
         ctx.accounts.digital_transaction.metadata.product = ctx.accounts.digital_product.key();
         ctx.accounts.digital_transaction.metadata.transaction_state = TransactionState::Opened;
         ctx.accounts.digital_transaction.metadata.transaction_price = price;
@@ -339,7 +339,7 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g> OrbitTransactionTrait<'a, 'b, 'c, 'd, 'e, 'f, '
 pub struct BuyerConfirmation<'info>{
     #[account(
         mut,
-        constraint = digital_transaction.metadata.buyer == buyer_account.voter_id,
+        constraint = digital_transaction.metadata.buyer == buyer_account.key(),
         constraint = digital_transaction.final_decision == BuyerDecisionState::Null,
     )]
     pub digital_transaction: Box<Account<'info, DigitalTransaction>>,
@@ -403,7 +403,7 @@ pub struct EarlyDeclineTransaction<'info>{
     pub digital_transaction: Account<'info, DigitalTransaction>,
 
     #[account(
-        constraint = buyer.voter_id == digital_transaction.metadata.buyer,
+        constraint = buyer.key() == digital_transaction.metadata.buyer,
         seeds = [
             b"orbit_account",
             wallet.key().as_ref()
@@ -437,7 +437,7 @@ pub struct SellerAcceptTransaction<'info>{
     pub digital_transaction: Box<Account<'info, DigitalTransaction>>,
 
     #[account(
-        constraint = seller_account.voter_id == digital_transaction.metadata.seller,
+        constraint = seller_account.key() == digital_transaction.metadata.seller,
         seeds = [
             b"orbit_account",
             wallet.key().as_ref()
@@ -467,7 +467,7 @@ pub struct CommitInitData<'info>{
     pub digital_transaction: Box<Account<'info, DigitalTransaction>>,
 
     #[account(
-        constraint = seller_account.voter_id == digital_transaction.metadata.seller,
+        constraint = seller_account.key() == digital_transaction.metadata.seller,
         seeds = [
             b"orbit_account",
             wallet.key().as_ref()
@@ -514,7 +514,7 @@ pub struct CommitSubKeys<'info>{
     pub digital_transaction: Box<Account<'info, DigitalTransaction>>,
 
     #[account(
-        constraint = seller_account.voter_id == digital_transaction.metadata.seller,
+        constraint = seller_account.key() == digital_transaction.metadata.seller,
         seeds = [
             b"orbit_account",
             wallet.key().as_ref()
@@ -567,15 +567,15 @@ pub struct LeaveReview<'info>{
     #[account(
         mut,
         constraint = 
-        (reviewer.voter_id == digital_transaction.metadata.seller) ||
-        (reviewer.voter_id == digital_transaction.metadata.buyer)
+        (reviewer.key() == digital_transaction.metadata.seller) ||
+        (reviewer.key() == digital_transaction.metadata.buyer)
     )]
     pub reviewed_account:Box<Account<'info, OrbitMarketAccount>>,
 
     #[account(
         constraint = 
-        (reviewer.voter_id == digital_transaction.metadata.seller) ||
-        (reviewer.voter_id == digital_transaction.metadata.buyer),
+        (reviewer.key() == digital_transaction.metadata.seller) ||
+        (reviewer.key() == digital_transaction.metadata.buyer),
         seeds = [
             b"orbit_account",
             wallet.key().as_ref()
@@ -610,7 +610,7 @@ impl <'a> OrbitMarketAccountTrait<'a, LeaveReview<'a>> for DigitalTransaction{
             return err!(ReviewErrors::RatingOutsideRange)
         };
 
-        if ctx.accounts.digital_transaction.metadata.seller == ctx.accounts.reviewer.voter_id && !ctx.accounts.digital_transaction.metadata.reviews.seller{
+        if ctx.accounts.digital_transaction.metadata.seller == ctx.accounts.reviewer.key() && !ctx.accounts.digital_transaction.metadata.reviews.seller{
             match ctx.bumps.get("digital_auth"){
                 Some(auth_bump) => {
                     submit_rating_with_signer(
@@ -626,7 +626,7 @@ impl <'a> OrbitMarketAccountTrait<'a, LeaveReview<'a>> for DigitalTransaction{
                 None => return err!(MarketAccountErrors::CannotCallOrbitAccountsProgram)
             };
         }else
-        if ctx.accounts.digital_transaction.metadata.buyer == ctx.accounts.reviewer.voter_id  && !ctx.accounts.digital_transaction.metadata.reviews.buyer{
+        if ctx.accounts.digital_transaction.metadata.buyer == ctx.accounts.reviewer.key()  && !ctx.accounts.digital_transaction.metadata.reviews.buyer{
             match ctx.bumps.get("digital_auth"){
                 Some(auth_bump) => {
                     submit_rating_with_signer(
