@@ -7,10 +7,10 @@ use orbit_catalog::OrbitVendorCatalog;
 use orbit_multisig::Multisig;
 use crate::{
     DigitalTransaction,
-    DigitalProduct,
     BuyerDecisionState, program::OrbitDigitalMarket,
 };
-use transaction::transaction_struct::TransactionState;
+use orbit_transaction::transaction_struct::TransactionState;
+use orbit_product::DigitalProduct;
 
 #[derive(Accounts)]
 pub struct OpenDigitalTransactionSol<'info>{
