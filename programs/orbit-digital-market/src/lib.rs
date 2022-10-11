@@ -1,5 +1,4 @@
 use anchor_lang::prelude::*;
-use orbit_product::product_struct::OrbitProduct;
 
 pub mod accessors;
 pub mod structs;
@@ -16,46 +15,46 @@ pub mod orbit_digital_market {
     use super::*;
     use orbit_transaction::transaction_trait::OrbitTransactionTrait;
     use market_accounts::structs::OrbitMarketAccountTrait;
-    use orbit_product::product_trait::OrbitProductTrait;
-
-    //////////////////////////
-    /// INITIALIZATION
-    
-    pub fn init_digital_recent_catalog(ctx: Context<CreateDigitalRecentCatalog>) -> Result<()>{
-        recent_digital_catalog_handler(ctx)
-    }
-
     //////////////////////////
     /// TRANSACTION
 
     /// SOL
-    pub fn open_transaction_sol(ctx: Context<OpenDigitalTransactionSol>, price: u64, use_discount: bool) -> Result<()>{
-        Digitalorbit_transaction::open_sol(ctx, price, use_discount)
+    pub fn open_transaction_sol(ctx: Context<OpenDigitalTransactionSol>, seller_index: u8, buyer_index: u8, price: u64, use_discount: bool) -> Result<()>{
+        DigitalTransaction::open_sol(ctx, seller_index, buyer_index, price, use_discount)
     }
 
     pub fn close_transaction_sol<'a>(ctx: Context<'_, '_, '_, 'a, CloseDigitalTransactionSol<'a>>) -> Result<()>{
-        Digitalorbit_transaction::close_sol(ctx)
+        DigitalTransaction::close_sol(ctx)
     }
 
     pub fn fund_escrow_sol(ctx: Context<FundEscrowSol>) -> Result<()>{
-        Digitalorbit_transaction::fund_escrow_sol(ctx)
+        DigitalTransaction::fund_escrow_sol(ctx)
+    }
+
+    pub fn seller_early_decline_sol(ctx: Context<SellerEarlyDeclineSol>) -> Result<()>{
+        DigitalTransaction::seller_early_decline_sol(ctx)
     }
 
     /// SPL
-    pub fn open_transaction_spl(ctx: Context<OpenDigitalTransactionSpl>, price: u64, use_discount: bool) -> Result<()>{
-        Digitalorbit_transaction::open_spl(ctx, price, use_discount)
+    pub fn open_transaction_spl(ctx: Context<OpenDigitalTransactionSpl>, seller_index: u8, buyer_index: u8, price: u64, use_discount: bool) -> Result<()>{
+        DigitalTransaction::open_spl(ctx, seller_index, buyer_index, price, use_discount)
     }
 
     pub fn close_transaction_spl<'a>(ctx: Context<'_, '_, '_, 'a, CloseDigitalTransactionSpl<'a>>) -> Result<()>{
-        Digitalorbit_transaction::close_spl(ctx)
+        DigitalTransaction::close_spl(ctx)
     }
 
     pub fn fund_escrow_spl(ctx: Context<FundEscrowSpl>) -> Result<()>{
-        Digitalorbit_transaction::fund_escrow_spl(ctx)
+        DigitalTransaction::fund_escrow_spl(ctx)
     }
 
+    pub fn seller_early_decline_spl(ctx: Context<SellerEarlyDeclineSpl>) -> Result<()>{
+        DigitalTransaction::seller_early_decline_spl(ctx)
+    }
+
+    /// COMMON
     pub fn close_transaction_account(ctx: Context<CloseTransactionAccount>) -> Result<()>{
-        Digitalorbit_transaction::close_transaction_account(ctx)
+        DigitalTransaction::close_transaction_account(ctx)
     }
     
     /// BUYER UTILS
@@ -67,12 +66,8 @@ pub mod orbit_digital_market {
         confirm_accept_handler(ctx)
     }
     
-    pub fn deny_accept(ctx: Context<BuyerConfirmation>) -> Result<()>{
+    pub fn deny_accept(ctx: Context<BuyerDeny>) -> Result<()>{
         deny_accept_handler(ctx)
-    }
-
-    pub fn early_decline(ctx: Context<EarlyDeclineTransaction>) -> Result<()>{
-        early_decline_handler(ctx)
     }
 
     /// SELLER UTILS
@@ -104,7 +99,7 @@ pub mod orbit_digital_market {
     /// REVIEW RELATED
 
     pub fn leave_review(ctx: Context<LeaveReview>, rating: u8) -> Result<()>{
-        Digitalorbit_transaction::leave_review(ctx, rating)
+        DigitalTransaction::leave_review(ctx, rating)
     }
 }
 

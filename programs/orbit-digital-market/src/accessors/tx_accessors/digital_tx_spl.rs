@@ -3,13 +3,12 @@ use market_accounts::{
     OrbitMarketAccount,
     program::OrbitMarketAccounts
 };
-use orbit_catalog::OrbitVendorCatalog;
-use orbit_multisig::Multisig;
+use orbit_product::{ListingsStruct, program::OrbitProduct};
 use crate::{
     DigitalTransaction,
     BuyerDecisionState, program::OrbitDigitalMarket,
 };
-use orbit_transaction::transaction_struct::TransactionState;
+use orbit_transaction::{transaction_struct::TransactionState, program::OrbitTransaction, SellerOpenTransactions, BuyerOpenTransactions};
 use orbit_product::DigitalProduct;
 use anchor_spl::token::{
     TokenAccount,
@@ -18,33 +17,21 @@ use anchor_spl::token::{
 };
 
 #[derive(Accounts)]
+#[instruction(seller_tx_index: u8)]
 pub struct OpenDigitalTransactionSpl<'info>{
+    //////////////////////////////////
+    /// TX
     #[account(
         init,
-        space = 4000,
         payer = buyer_wallet,
+        space = 1000,
+        seeds = [
+            b"orbit_digital_transaction",
+            [seller_tx_index].as_ref()
+        ],
+        bump
     )]
     pub digital_transaction: Box<Account<'info, DigitalTransaction>>,
-
-    #[account(
-        constraint = digital_product.metadata.currency != System::id()
-    )]
-    pub digital_product: Box<Account<'info, DigitalProduct>>,
-
-    #[account(
-        constraint = seller_account.wallet == seller_catalog.catalog_owner
-    )]
-    pub seller_account:Box<Account<'info, OrbitMarketAccount>>,
-
-    #[account(
-        address = digital_product.metadata.owner_catalog
-    )]
-    pub seller_catalog:Box<Account<'info, OrbitVendorCatalog>>,
-
-    #[account(
-        address = digital_product.metadata.currency
-    )]
-    pub token_mint: Account<'info, Mint>,
 
     #[account(
         init,
@@ -59,38 +46,78 @@ pub struct OpenDigitalTransactionSpl<'info>{
     )]
     pub escrow_account: Account<'info, TokenAccount>,
 
+    //////////////////////////////////
+    /// PRODUCT
     #[account(
-        mut,
-        seeds = [
-            b"orbit_account",
-            buyer_wallet.key().as_ref()
-        ],
-        bump,
-        seeds::program = market_accounts::ID
+        address = digital_product.metadata.currency
     )]
-    pub buyer_account:Box<Account<'info, OrbitMarketAccount>>,
+    pub token_mint: Account<'info, Mint>,
 
     #[account(
         mut,
-        address = buyer_account.wallet
+        constraint = digital_product.metadata.currency != System::id()
     )]
+    pub digital_product: Box<Account<'info, DigitalProduct>>,
+    
+    //////////////////////////////////////////////////
+    /// BUYER SELLER
+    
+    /// BUYER
+    #[account(
+        mut,
+        has_one = buyer_wallet
+    )]
+    pub buyer_transactions_log: Box<Account<'info, BuyerOpenTransactions>>,
+
+    #[account(
+        mut,
+        constraint = buyer_market_account.wallet == buyer_wallet.key(),
+        constraint = buyer_market_account.buyer_digital_transactions == buyer_transactions_log.key()
+    )]
+    pub buyer_market_account: Box<Account<'info, OrbitMarketAccount>>,
+    
+    #[account(mut)]
     pub buyer_wallet: Signer<'info>,
+    
+    /// SELLER
+    #[account(
+        address = digital_product.metadata.owner_catalog
+    )]
+    pub seller_listings: Box<Account<'info, ListingsStruct>>,
 
-    pub system_program: Program<'info, System>,
+    #[account(
+        mut,
+        constraint = seller_transactions_log.seller_wallet == seller_listings.listings_owner
+    )]
+    pub seller_transactions_log: Box<Account<'info, SellerOpenTransactions>>,
 
-    pub token_program: Program<'info, Token>,
-
+    //////////////////////////////////////////////////
+    /// EXTRANEOUS CPI
     #[account(
         seeds = [b"market_authority"],
         bump
     )]
     pub digital_auth: SystemAccount<'info>,
 
+    pub digital_program: Program<'info, OrbitDigitalMarket>,
+
+    pub market_account_program: Program<'info, OrbitMarketAccounts>,
+
+    pub system_program: Program<'info, System>,
+
+    pub token_program: Program<'info, Token>,
+
+    pub product_program: Program<'info, OrbitProduct>,
+    
+    pub transaction_program: Program<'info, OrbitTransaction>,
+
     pub rent: Sysvar<'info, Rent>
 }
 
 #[derive(Accounts)]
 pub struct CloseDigitalTransactionSpl<'info>{
+    //////////////////////////////////
+    /// TX
     #[account(
         mut,
         constraint =    ((digital_transaction.metadata.transaction_state == TransactionState::BuyerConfirmedProduct) && (digital_transaction.final_decision != BuyerDecisionState::Null)) ||
@@ -99,95 +126,93 @@ pub struct CloseDigitalTransactionSpl<'info>{
     pub digital_transaction: Box<Account<'info, DigitalTransaction>>,
 
     #[account(
-        constraint = buyer_account.key() == digital_transaction.metadata.buyer
+        mut,
+        seeds = [
+            b"digital_escrow_spl",
+            digital_transaction.key().as_ref(),
+        ],
+        bump,
+        
+        address = digital_transaction.metadata.escrow_account
+    )]
+    pub escrow_account: Account<'info, TokenAccount>,
+
+    //////////////////////////////////
+    /// BUYER SELLER
+    
+    /// BUYER
+    #[account(
+        mut,
+        constraint = buyer_account.wallet == buyer_transactions_log.buyer_wallet
     )]
     pub buyer_account: Box<Account<'info, OrbitMarketAccount>>,
 
     #[account(
         mut,
-        address = buyer_account.wallet
+        address = digital_transaction.metadata.buyer
     )]
-    pub buyer_wallet: SystemAccount<'info>,
+    pub buyer_transactions_log: Box<Account<'info, BuyerOpenTransactions>>,
 
     #[account(
         mut,
-        owner = buyer_account.wallet
+        token::authority = buyer_transactions_log.buyer_wallet
     )]
     pub buyer_token_account: Account<'info, TokenAccount>,
 
+    /// SELLER
     #[account(
-        constraint = seller_account.key() == digital_transaction.metadata.seller
+        mut,
+        constraint = seller_account.wallet == seller_transactions_log.seller_wallet
     )]
     pub seller_account: Box<Account<'info, OrbitMarketAccount>>,
 
     #[account(
         mut,
-        constraint = seller_token_account.owner == seller_account.wallet
+        address = digital_transaction.metadata.seller
     )]
-    pub seller_token_account: Account<'info, TokenAccount>,
+    pub seller_transactions_log: Box<Account<'info, SellerOpenTransactions>>,
 
     #[account(
         mut,
-        seeds = [
-            b"digital_escrow_spl",
-            digital_transaction.key().as_ref(),
-        ],
-        bump,
-
-        address = digital_transaction.metadata.escrow_account
+        token::authority = seller_transactions_log.seller_wallet
     )]
-    pub escrow_account: Account<'info, TokenAccount>,
+    pub seller_token_account: Account<'info, TokenAccount>,
 
+    
+    //////////////////////////////////
+    /// CPI AND EXTRANEOUS
+    
     #[account(
         seeds = [b"market_authority"],
         bump
     )]
     pub digital_auth: SystemAccount<'info>,
-
-    #[account(
-        address = market_accounts::ID
-    )]
-    pub market_account_program: Program<'info, OrbitMarketAccounts>,
-
-    pub token_program: Program<'info, Token>,
-
-    pub digital_program: Program<'info, OrbitDigitalMarket>,
     
     #[account(
-        mut,
-        address = Pubkey::new(orbit_addresses::MULTISIG_WALLET_ADDRESS)
-    )]
-    pub multisig_address: Box<Account<'info, Multisig>>,
-
-    #[account(
-        mut,
-        seeds = [
-            multisig_address.key().as_ref()
-        ],
-        bump = multisig_address.nonce,
-        seeds::program = orbit_multisig::ID
-    )]
-    pub multisig_owner: SystemAccount<'info>,
-
-    #[account(
-        constraint = multisig_ata.owner == multisig_owner.key()
+        token::authority = Pubkey::new(orbit_addresses::MULTISIG_SIGNER)
     )]
     pub multisig_ata: Account<'info, TokenAccount>,
+
+    pub market_account_program: Program<'info, OrbitMarketAccounts>,
+    
+    pub digital_program: Program<'info, OrbitDigitalMarket>,
+
+    pub transaction_program: Program<'info, OrbitTransaction>,
+
+    pub token_program: Program<'info, Token>,
+    
 }
 
 #[derive(Accounts)]
 pub struct FundEscrowSpl<'info>{
+    ////////////////////////////////////////////
+    /// TX
     #[account(
         mut,
         constraint = digital_transaction.metadata.transaction_state == TransactionState::SellerConfirmed,
     )]
     pub digital_transaction: Box<Account<'info, DigitalTransaction>>,
-
-    #[account(
-        constraint = buyer_account.key() == digital_transaction.metadata.buyer
-    )]
-    pub buyer_account:Box<Account<'info, OrbitMarketAccount>>,
-
+    
     #[account(
         mut,
         seeds = [
@@ -199,15 +224,116 @@ pub struct FundEscrowSpl<'info>{
     )]
     pub escrow_account: Account<'info, TokenAccount>,
 
+    ////////////////////////////////////////////
+    /// BUYER SELLER
+    
+    /// BUYER
     #[account(
-        address = buyer_account.wallet
+        mut,
+        address = digital_transaction.metadata.buyer
+    )]
+    pub buyer_transactions_log: Box<Account<'info, BuyerOpenTransactions>>,
+
+    #[account(
+        mut,
+        token::authority = buyer_wallet.key()
+    )]
+    pub buyer_token_account: Account<'info, TokenAccount>,
+
+    #[account(
+        address = buyer_transactions_log.buyer_wallet
     )]
     pub buyer_wallet: Signer<'info>,
 
-    #[account(
-        constraint = buyer_spl_wallet.owner == buyer_wallet.key()
-    )]
-    pub buyer_spl_wallet: Account<'info, TokenAccount>,
+    //////////////////////////////////
+    /// CPI AND EXTRANEOUS
 
     pub token_program: Program<'info, Token>
+}
+
+
+#[derive(Accounts)]
+pub struct SellerEarlyDeclineSpl<'info>{
+    //////////////////////////////////
+    /// TX
+    #[account(
+        mut,
+        constraint = digital_transaction.final_decision == BuyerDecisionState::Null
+    )]
+    pub digital_transaction: Box<Account<'info, DigitalTransaction>>,
+    
+    #[account(
+        mut,
+        seeds = [
+            b"digital_escrow_spl",
+            digital_transaction.key().as_ref(),
+        ],
+        bump,
+        
+        address = digital_transaction.metadata.escrow_account
+    )]
+    pub escrow_account: Account<'info, TokenAccount>,
+
+    //////////////////////////////////
+    /// BUYER SELLER
+    
+    /// BUYER
+    #[account(
+        mut,
+        constraint = buyer_account.wallet == buyer_transactions_log.buyer_wallet
+    )]
+    pub buyer_account: Box<Account<'info, OrbitMarketAccount>>,
+
+    #[account(
+        mut,
+        address = digital_transaction.metadata.buyer
+    )]
+    pub buyer_transactions_log: Box<Account<'info, BuyerOpenTransactions>>,
+
+    #[account(
+        mut,
+        token::authority = buyer_transactions_log.buyer_wallet
+    )]
+    pub buyer_token_account: Account<'info, TokenAccount>,
+
+    /// SELLER
+
+    #[account(
+        mut,
+        address = digital_transaction.metadata.seller,
+        has_one = seller_wallet
+    )]
+    pub seller_transactions_log: Box<Account<'info, SellerOpenTransactions>>,
+
+    #[account(
+        mut,
+        token::authority = seller_wallet
+    )]
+    pub seller_token_account: Account<'info, TokenAccount>,
+
+    pub seller_wallet: Signer<'info>,
+
+    
+    //////////////////////////////////
+    /// CPI AND EXTRANEOUS
+    
+    #[account(
+        seeds = [b"market_authority"],
+        bump
+    )]
+    pub digital_auth: SystemAccount<'info>,
+    
+    #[account(
+        token::authority = Pubkey::new(orbit_addresses::MULTISIG_SIGNER)
+    )]
+    pub multisig_ata: Account<'info, TokenAccount>,
+
+    pub market_account_program: Program<'info, OrbitMarketAccounts>,
+    
+    pub digital_program: Program<'info, OrbitDigitalMarket>,
+
+    pub transaction_program: Program<'info, OrbitTransaction>,
+
+    pub token_program: Program<'info, Token>,
+    
 }

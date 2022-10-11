@@ -1,9 +1,9 @@
 use anchor_lang::prelude::*;
-use orbit_transaction::transaction_struct::OrbitTransaction;
+use orbit_transaction::transaction_struct::OrbitTransactionStruct;
 
 #[account]
 pub struct DigitalTransaction{
-    pub metadata: OrbitTransaction, // 172
+    pub metadata: OrbitTransactionStruct, // 172
 
     pub data_address: String, // 64
     pub num_keys: u64, // 8
