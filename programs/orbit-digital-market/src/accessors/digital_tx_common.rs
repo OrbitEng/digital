@@ -66,12 +66,6 @@ pub struct CloseTransactionAccount<'info>{
     pub wallet: Signer<'info>,
 
     #[account(
-        address = digital_transaction.metadata.buyer,
-        has_one = buyer_wallet
-    )]
-    pub buyer_transactions: Box<Account<'info, BuyerOpenTransactions>>,
-
-    #[account(
         mut
     )]
     pub buyer_wallet: SystemAccount<'info>
@@ -286,7 +280,7 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g, 'h, 'i> OrbitTransactionTrait<'a, 'b, 'c, 'd, '
             CpiContext::new(
                 ctx.accounts.transaction_program.to_account_info(),
                 orbit_transaction::cpi::accounts::ClearBuyerTransactions{
-                    transactions_log: ctx.accounts.seller_transactions_log.to_account_info(),
+                    transactions_log: ctx.accounts.buyer_transactions_log.to_account_info(),
                     caller_auth: ctx.accounts.digital_auth.to_account_info(),
                     caller: ctx.accounts.digital_program.to_account_info()
                 }
@@ -390,7 +384,7 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g, 'h, 'i> OrbitTransactionTrait<'a, 'b, 'c, 'd, '
             CpiContext::new(
                 ctx.accounts.transaction_program.to_account_info(),
                 orbit_transaction::cpi::accounts::ClearBuyerTransactions{
-                    transactions_log: ctx.accounts.seller_transactions_log.to_account_info(),
+                    transactions_log: ctx.accounts.buyer_transactions_log.to_account_info(),
                     caller_auth: ctx.accounts.digital_auth.to_account_info(),
                     caller: ctx.accounts.digital_program.to_account_info()
                 }
@@ -499,7 +493,7 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g, 'h, 'i> OrbitTransactionTrait<'a, 'b, 'c, 'd, '
             CpiContext::new(
                 ctx.accounts.transaction_program.to_account_info(),
                 orbit_transaction::cpi::accounts::ClearBuyerTransactions{
-                    transactions_log: ctx.accounts.seller_transactions_log.to_account_info(),
+                    transactions_log: ctx.accounts.buyer_transactions_log.to_account_info(),
                     caller_auth: ctx.accounts.digital_auth.to_account_info(),
                     caller: ctx.accounts.digital_program.to_account_info()
                 }
@@ -564,7 +558,7 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g, 'h, 'i> OrbitTransactionTrait<'a, 'b, 'c, 'd, '
             CpiContext::new(
                 ctx.accounts.transaction_program.to_account_info(),
                 orbit_transaction::cpi::accounts::ClearBuyerTransactions{
-                    transactions_log: ctx.accounts.seller_transactions_log.to_account_info(),
+                    transactions_log: ctx.accounts.buyer_transactions_log.to_account_info(),
                     caller_auth: ctx.accounts.digital_auth.to_account_info(),
                     caller: ctx.accounts.digital_program.to_account_info()
                 }
@@ -719,11 +713,15 @@ pub struct CommitInitData<'info>{
 }
 
 pub fn commit_init_keys_handler(ctx: Context<CommitInitData>, submission_keys: Vec<Pubkey>) -> Result<()>{   
-    if submission_keys.len() > 64{
+    if (submission_keys.len() > 64) || (submission_keys.len() <= 0){
         return err!(DigitalMarketErrors::IndexOutOfRange)
     }
 
-    ctx.accounts.digital_transaction.num_keys = submission_keys.len() as u64;
+    let mut total_keys: u64 = 0;
+    for ind in 0..submission_keys.len(){
+        total_keys |= 1<<ind;
+    }
+    ctx.accounts.digital_transaction.num_keys = total_keys;
     ctx.accounts.digital_transaction.key_arr = submission_keys;
     Ok(())
 }
@@ -770,7 +768,7 @@ pub fn commit_subkeys_handler(ctx: Context<CommitSubKeys>, indexes: Vec<u8>) -> 
             return err!(DigitalMarketErrors::IncorrectPrivateKey);
         }
 
-        ctx.accounts.digital_transaction.num_keys &= u64::MAX - (1 << index);
+        ctx.accounts.digital_transaction.num_keys &= (!(1 << index)) as u64;
         ctx.accounts.digital_transaction.key_arr[index as usize] = acc.key();
     }
 

@@ -27,6 +27,7 @@ pub struct OpenDigitalTransactionSpl<'info>{
         space = 1000,
         seeds = [
             b"orbit_digital_transaction",
+            seller_transactions_log.key().as_ref(),
             [seller_tx_index].as_ref()
         ],
         bump
@@ -38,8 +39,9 @@ pub struct OpenDigitalTransactionSpl<'info>{
         token::mint = token_mint,
         token::authority = digital_auth,
         seeds = [
-            b"digital_escrow_spl",
+            b"orbit_escrow_account",
             digital_transaction.key().as_ref(),
+            buyer_transactions_log.key().as_ref()
         ],
         bump,
         payer = buyer_wallet
@@ -128,8 +130,9 @@ pub struct CloseDigitalTransactionSpl<'info>{
     #[account(
         mut,
         seeds = [
-            b"digital_escrow_spl",
+            b"orbit_escrow_account",
             digital_transaction.key().as_ref(),
+            buyer_transactions_log.key().as_ref()
         ],
         bump,
         
@@ -216,8 +219,9 @@ pub struct FundEscrowSpl<'info>{
     #[account(
         mut,
         seeds = [
-            b"digital_escrow_spl",
+            b"orbit_escrow_account",
             digital_transaction.key().as_ref(),
+            buyer_transactions_log.key().as_ref()
         ],
         bump,
         address = digital_transaction.metadata.escrow_account
@@ -265,8 +269,9 @@ pub struct SellerEarlyDeclineSpl<'info>{
     #[account(
         mut,
         seeds = [
-            b"digital_escrow_spl",
+            b"orbit_escrow_account",
             digital_transaction.key().as_ref(),
+            buyer_transactions_log.key().as_ref()
         ],
         bump,
         
@@ -322,11 +327,6 @@ pub struct SellerEarlyDeclineSpl<'info>{
         bump
     )]
     pub digital_auth: SystemAccount<'info>,
-    
-    #[account(
-        token::authority = Pubkey::new(orbit_addresses::MULTISIG_SIGNER)
-    )]
-    pub multisig_ata: Account<'info, TokenAccount>,
 
     pub market_account_program: Program<'info, OrbitMarketAccounts>,
     
