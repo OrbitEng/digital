@@ -41,10 +41,7 @@ pub struct OpenDigitalTransactionSol<'info>{
     )]
     pub escrow_account: SystemAccount<'info>,
 
-    #[account(
-        mut,
-        constraint = digital_product.metadata.currency == System::id()
-    )] 
+    #[account(mut)]
     pub digital_product: Box<Account<'info, DigitalProduct>>,
     
     //////////////////////////////////////////////////

@@ -50,14 +50,11 @@ pub struct OpenDigitalTransactionSpl<'info>{
 
     //////////////////////////////////
     /// PRODUCT
-    #[account(
-        address = digital_product.metadata.currency
-    )]
+    
     pub token_mint: Account<'info, Mint>,
 
     #[account(
-        mut,
-        constraint = digital_product.metadata.currency != System::id()
+        mut
     )]
     pub digital_product: Box<Account<'info, DigitalProduct>>,
     

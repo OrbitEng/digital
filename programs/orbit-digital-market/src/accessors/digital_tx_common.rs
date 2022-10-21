@@ -96,7 +96,7 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g, 'h, 'i> OrbitTransactionTrait<'a, 'b, 'c, 'd, '
         ctx.accounts.digital_transaction.metadata.transaction_state = TransactionState::Opened;
         ctx.accounts.digital_transaction.metadata.transaction_price = price;
         ctx.accounts.digital_transaction.metadata.funded = false;
-        ctx.accounts.digital_transaction.metadata.currency = ctx.accounts.digital_product.metadata.currency;
+        ctx.accounts.digital_transaction.metadata.currency = System::id();
 
         ctx.accounts.digital_transaction.num_keys = 0;
 
@@ -158,7 +158,7 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g, 'h, 'i> OrbitTransactionTrait<'a, 'b, 'c, 'd, '
         ctx.accounts.digital_transaction.metadata.transaction_state = TransactionState::Opened;
         ctx.accounts.digital_transaction.metadata.transaction_price = price;
         ctx.accounts.digital_transaction.metadata.funded = false;
-        ctx.accounts.digital_transaction.metadata.currency = ctx.accounts.digital_product.metadata.currency;
+        ctx.accounts.digital_transaction.metadata.currency = ctx.accounts.token_mint.key();
         
         ctx.accounts.digital_transaction.num_keys = 0;
 
