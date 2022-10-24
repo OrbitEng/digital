@@ -91,7 +91,7 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g, 'h, 'i> OrbitTransactionTrait<'a, 'b, 'c, 'd, '
                         caller_auth: ctx.accounts.digital_auth.to_account_info(),
                         caller: ctx.accounts.digital_program.to_account_info()
                     },
-                    &[&[b"market_auth", &[*auth_bump]]]
+                    &[&[b"market_authority", &[*auth_bump]]]
                 )
             )?;
         }else{
@@ -135,7 +135,7 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g, 'h, 'i> OrbitTransactionTrait<'a, 'b, 'c, 'd, '
                     caller_auth: ctx.accounts.digital_auth.to_account_info(),
                     caller: ctx.accounts.digital_program.to_account_info()
                 },
-                &[&[b"market_auth", &[*auth_bump]]]
+                &[&[b"market_authority", &[*auth_bump]]]
             ),
             seller_index
         )?;
@@ -161,7 +161,7 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g, 'h, 'i> OrbitTransactionTrait<'a, 'b, 'c, 'd, '
                         caller_auth: ctx.accounts.digital_auth.to_account_info(),
                         caller: ctx.accounts.digital_program.to_account_info()
                     },
-                    &[&[b"market_auth", &[*auth_bump]]]
+                    &[&[b"market_authority", &[*auth_bump]]]
                 )
             )?;
         }else{
@@ -205,7 +205,7 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g, 'h, 'i> OrbitTransactionTrait<'a, 'b, 'c, 'd, '
                     caller_auth: ctx.accounts.digital_auth.to_account_info(),
                     caller: ctx.accounts.digital_program.to_account_info()
                 },
-                &[&[b"market_auth", &[*auth_bump]]]
+                &[&[b"market_authority", &[*auth_bump]]]
             ),
             seller_index
         )?;
