@@ -35,7 +35,8 @@ pub struct OpenDigitalTransactionSol<'info>{
     #[account(
         seeds = [
             b"orbit_escrow_account",
-            digital_transaction.key().as_ref()
+            digital_transaction.key().as_ref(),
+            buyer_transactions_log.key().as_ref()
         ],
         bump
     )]
