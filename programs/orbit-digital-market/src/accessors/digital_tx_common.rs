@@ -74,17 +74,24 @@ pub struct CloseTransactionAccount<'info>{
 
 impl<'a, 'b, 'c, 'd, 'e, 'f, 'g, 'h, 'i> OrbitTransactionTrait<'a, 'b, 'c, 'd, 'e, 'f, 'g, 'h, 'i, OpenDigitalTransactionSol<'a>, OpenDigitalTransactionSpl<'b>, CloseDigitalTransactionSol<'c>, CloseDigitalTransactionSpl<'d>, FundEscrowSol<'e>, FundEscrowSpl<'f>, CloseTransactionAccount<'g>, SellerEarlyDeclineSol<'h>, SellerEarlyDeclineSpl<'i>> for DigitalTransaction{
     fn open_sol(ctx: Context<OpenDigitalTransactionSol>, seller_index: u8, buyer_index: u8, mut price: u64, use_discount: bool) -> Result<()>{
+        let auth_bump: &u8;
+        if let Some(ab) = ctx.bumps.get("digital_auth"){
+            auth_bump = ab
+        }else{
+            return err!(DigitalMarketErrors::InvalidAuthBump)
+        };
         if use_discount && ctx.accounts.buyer_market_account.dispute_discounts > 0{
             ctx.accounts.digital_transaction.metadata.rate = 100;
             price = price * 95 / 100;
             market_accounts::cpi::decrement_dispute_discounts(
-                CpiContext::new(
+                CpiContext::new_with_signer(
                     ctx.accounts.market_account_program.to_account_info(),
                     market_accounts::cpi::accounts::MarketAccountUpdateInternal{
                         market_account: ctx.accounts.buyer_market_account.to_account_info(),
                         caller_auth: ctx.accounts.digital_auth.to_account_info(),
                         caller: ctx.accounts.digital_program.to_account_info()
-                    }
+                    },
+                    &[&[b"market_auth", &[*auth_bump]]]
                 )
             )?;
         }else{
@@ -120,14 +127,15 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g, 'h, 'i> OrbitTransactionTrait<'a, 'b, 'c, 'd, '
             buyer_index
         )?;
         orbit_transaction::cpi::add_to_seller_transactions_log(
-            CpiContext::new(
+            CpiContext::new_with_signer(
                 ctx.accounts.transaction_program.to_account_info(),
                 orbit_transaction::cpi::accounts::AddSellerTransactions{
                     transactions_log: ctx.accounts.seller_transactions_log.to_account_info(),
                     tx: ctx.accounts.digital_transaction.to_account_info(),
                     caller_auth: ctx.accounts.digital_auth.to_account_info(),
                     caller: ctx.accounts.digital_program.to_account_info()
-                }
+                },
+                &[&[b"market_auth", &[*auth_bump]]]
             ),
             seller_index
         )?;
@@ -136,17 +144,24 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g, 'h, 'i> OrbitTransactionTrait<'a, 'b, 'c, 'd, '
     }
 
     fn open_spl(ctx: Context<OpenDigitalTransactionSpl>, seller_index: u8, buyer_index: u8, mut price: u64, use_discount: bool) -> Result<()>{
+        let auth_bump: &u8;
+        if let Some(ab) = ctx.bumps.get("digital_auth"){
+            auth_bump = ab
+        }else{
+            return err!(DigitalMarketErrors::InvalidAuthBump)
+        };
         if use_discount && ctx.accounts.buyer_market_account.dispute_discounts > 0{
             ctx.accounts.digital_transaction.metadata.rate = 100;
             price = price * 95 / 100;
             market_accounts::cpi::decrement_dispute_discounts(
-                CpiContext::new(
+                CpiContext::new_with_signer(
                     ctx.accounts.market_account_program.to_account_info(),
                     market_accounts::cpi::accounts::MarketAccountUpdateInternal{
                         market_account: ctx.accounts.buyer_market_account.to_account_info(),
                         caller_auth: ctx.accounts.digital_auth.to_account_info(),
                         caller: ctx.accounts.digital_program.to_account_info()
-                    }
+                    },
+                    &[&[b"market_auth", &[*auth_bump]]]
                 )
             )?;
         }else{
@@ -182,14 +197,15 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g, 'h, 'i> OrbitTransactionTrait<'a, 'b, 'c, 'd, '
             buyer_index
         )?;
         orbit_transaction::cpi::add_to_seller_transactions_log(
-            CpiContext::new(
+            CpiContext::new_with_signer(
                 ctx.accounts.transaction_program.to_account_info(),
                 orbit_transaction::cpi::accounts::AddSellerTransactions{
                     transactions_log: ctx.accounts.seller_transactions_log.to_account_info(),
                     tx: ctx.accounts.digital_transaction.to_account_info(),
                     caller_auth: ctx.accounts.digital_auth.to_account_info(),
                     caller: ctx.accounts.digital_program.to_account_info()
-                }
+                },
+                &[&[b"market_auth", &[*auth_bump]]]
             ),
             seller_index
         )?;
