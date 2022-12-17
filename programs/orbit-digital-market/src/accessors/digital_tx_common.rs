@@ -271,6 +271,17 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g, 'h, 'i> OrbitTransactionTrait<'a, 'b, 'c, 'd, '
         };
 
         if let Some(auth_bump) = ctx.bumps.get("digital_auth"){
+            orbit_product::cpi::digital_increment_times_sold(
+                CpiContext::new_with_signer(
+                    ctx.accounts.product_program.to_account_info(),
+                    orbit_product::cpi::accounts::UpdateDigitalQuantityInternal{
+                        product: ctx.accounts.digital_product.to_account_info(),
+                        caller_auth: ctx.accounts.digital_auth.to_account_info(),
+                        caller: ctx.accounts.digital_program.to_account_info()
+                    },
+                    &[&[b"market_authority", &[*auth_bump]]]
+                )
+            )?;
             orbit_transaction::post_tx_incrementing!(
                 ctx.accounts.market_account_program.to_account_info(),
                 ctx.accounts.buyer_account.to_account_info(),
@@ -375,6 +386,17 @@ impl<'a, 'b, 'c, 'd, 'e, 'f, 'g, 'h, 'i> OrbitTransactionTrait<'a, 'b, 'c, 'd, '
                     ctx.accounts.digital_transaction.metadata.transaction_price,
                     100
                 ).expect("could not transfer tokens");
+                orbit_product::cpi::digital_increment_times_sold(
+                    CpiContext::new_with_signer(
+                        ctx.accounts.product_program.to_account_info(),
+                        orbit_product::cpi::accounts::UpdateDigitalQuantityInternal{
+                            product: ctx.accounts.digital_product.to_account_info(),
+                            caller_auth: ctx.accounts.digital_auth.to_account_info(),
+                            caller: ctx.accounts.digital_program.to_account_info()
+                        },
+                        &[&[b"market_authority", &[*auth_bump]]]
+                    )
+                )?;
                 orbit_transaction::post_tx_incrementing!(
                     ctx.accounts.market_account_program.to_account_info(),
                     ctx.accounts.buyer_account.to_account_info(),
@@ -660,7 +682,7 @@ pub struct BuyerDeny<'info>{
     #[account(
         seeds = [
             b"buyer_transactions",
-            (&(orbit_transaction::TransactionType::Commissions).try_to_vec()?).as_slice(),
+            (&(orbit_transaction::TransactionType::Digital).try_to_vec()?).as_slice(),
             &buyer_account.voter_id.to_le_bytes()
         ], 
         bump,

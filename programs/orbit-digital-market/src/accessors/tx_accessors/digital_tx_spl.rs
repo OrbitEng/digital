@@ -137,6 +137,13 @@ pub struct CloseDigitalTransactionSpl<'info>{
 
     #[account(
         mut,
+        constraint = digital_product.metadata.index == digital_transaction.metadata.product,
+        constraint = digital_product.metadata.owner_catalog == seller_account.voter_id
+    )] 
+    pub digital_product: Box<Account<'info, DigitalProduct>>,
+
+    #[account(
+        mut,
         seeds = [
             b"orbit_escrow_account",
             digital_transaction.key().as_ref(),
@@ -185,7 +192,7 @@ pub struct CloseDigitalTransactionSpl<'info>{
         mut,
         seeds = [
             b"seller_transactions",
-            (&(orbit_transaction::TransactionType::Commissions).try_to_vec()?).as_slice(),
+            (&(orbit_transaction::TransactionType::Digital).try_to_vec()?).as_slice(),
             &seller_account.voter_id.to_le_bytes()
         ], 
         bump,
@@ -221,6 +228,8 @@ pub struct CloseDigitalTransactionSpl<'info>{
     pub transaction_program: Program<'info, OrbitTransaction>,
 
     pub token_program: Program<'info, Token>,
+    
+    pub product_program: Program<'info, OrbitProduct>,
     
 }
 
@@ -319,7 +328,7 @@ pub struct SellerEarlyDeclineSpl<'info>{
         mut,
         seeds = [
             b"buyer_transactions",
-            (&(orbit_transaction::TransactionType::Commissions).try_to_vec()?).as_slice(),
+            (&(orbit_transaction::TransactionType::Digital).try_to_vec()?).as_slice(),
             &buyer_account.voter_id.to_le_bytes()
         ], 
         bump,

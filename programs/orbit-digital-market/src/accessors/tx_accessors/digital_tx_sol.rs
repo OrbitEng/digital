@@ -122,6 +122,13 @@ pub struct CloseDigitalTransactionSol<'info>{
                         (digital_transaction.metadata.transaction_state == TransactionState::Opened),
     )]
     pub digital_transaction: Box<Account<'info, DigitalTransaction>>,
+    
+    #[account(
+        mut,
+        constraint = digital_product.metadata.index == digital_transaction.metadata.product,
+        constraint = digital_product.metadata.owner_catalog == seller_account.voter_id
+    )] 
+    pub digital_product: Box<Account<'info, DigitalProduct>>,
 
     #[account(
         mut,
@@ -206,7 +213,9 @@ pub struct CloseDigitalTransactionSol<'info>{
     
     pub market_account_program: Program<'info, OrbitMarketAccounts>,
 
-    pub transaction_program: Program<'info, OrbitTransaction>
+    pub transaction_program: Program<'info, OrbitTransaction>,
+    
+    pub product_program: Program<'info, OrbitProduct>,
 }
 
 #[derive(Accounts)]
